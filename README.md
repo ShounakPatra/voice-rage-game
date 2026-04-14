@@ -32,8 +32,8 @@ A chaotic voice-controlled Android game where your **loudness controls movement*
 4. Run ▶
 
 ## 📸 Screenshot
+![Screenshot_20260414-220829](https://github.com/user-attachments/assets/a531d5d5-8f12-447e-86be-d21f0c553d03)
 
-(Add your game screenshot here)
 
 ---
 
