@@ -1,6 +1,9 @@
 # 🎤 Voice Rage Game
 
 A chaotic voice-controlled Android game where your **loudness controls movement** 😈
+## 📲 Download Game
+
+👉 [Download APK](https://github.com/ShounakPatra/voice-rage-game/releases)
 
 ## 🎮 Gameplay
 
