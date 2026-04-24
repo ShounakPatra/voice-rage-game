@@ -13,7 +13,7 @@
 ## 📥 Download
 
 <p align="center">
-  <a href="https://github.com/ShounakPatra/voice-rage-game/releases/latest">
+  <a href="https://github.com/ShounakPatra/voice-rage-game/releases/download/v2.0/VoiceRageGame-v2.0.apk">
     <img src="https://img.shields.io/badge/Download-APK_v2.0-blue?style=for-the-badge"/>
   </a>
 </p>
