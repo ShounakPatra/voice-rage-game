@@ -87,5 +87,19 @@ Control your character using your **voice intensity**:
 Made with chaos by **Shounak** 🚀  
 
 ---
+## 🐛 Report Bugs / Request Features
+
+Found a bug or have an idea?
+
+👉 Open an issue here:  
+https://github.com/ShounakPatra/voice-rage-game/issues
+Or,
+shounakpatra68@gmail.com
+
+Please include:
+- Device name 📱
+- Android version
+- What happened
+- Steps to reproduce
 
 💀 If you're still alive after v2.0… you're built differently.
