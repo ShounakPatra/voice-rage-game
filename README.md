@@ -62,7 +62,8 @@ Control your character using your **voice intensity**:
 
 ## 📸 Screenshots
 
-![Gameplay](https://github.com/user-attachments/assets/a531d5d5-8f12-447e-86be-d21f0c553d03)
+![Gameplay](https://github.com/user-attachments/assets/cb27c261-ddad-4a01-843c-ff04d35870f7)
+
 
 ---
 
@@ -81,12 +82,6 @@ Control your character using your **voice intensity**:
 - Best experienced in a quiet environment (or go full rage mode 😈)
 
 ---
-
-## 👨‍💻 Author
-
-Made with chaos by **Shounak** 🚀  
-
----
 ## 🐛 Report Bugs / Request Features
 
 Found a bug or have an idea?
@@ -101,5 +96,11 @@ Please include:
 - Android version
 - What happened
 - Steps to reproduce
+
+## 👨‍💻 Author
+
+Made with chaos by **Shounak** 🚀  
+
+---
 
 💀 If you're still alive after v2.0… you're built differently.
