@@ -1,5 +1,5 @@
 package com.shounak.voiceragegame;
-
+import android.view.View;
 import android.Manifest;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -32,7 +32,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void startGame() {
         gameView = new GameView(this);
-        setContentView(gameView); // GameView IS the whole screen
+        setContentView(gameView);
+        hideSystemUI();
+    }
+
+    private void hideSystemUI() {
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        );
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) hideSystemUI(); // re-hides if user swipes to reveal
     }
 
     @Override
@@ -55,7 +73,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (gameView != null) {
-            // game loop stops when app goes to background
+            gameView.pause();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (gameView != null) {
+            gameView.resume();
         }
     }
 }

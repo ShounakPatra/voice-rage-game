@@ -1,19 +1,27 @@
 package com.shounak.voiceragegame;
+
 import java.util.Random;
 import android.graphics.RectF;
 
 public class Player {
+
     Random random = new Random();
+
     public float x, y;
     public float velY = 0;
     public boolean isOnGround = true;
     public int width = 90, height = 90;
     public float speed = 0;
     public boolean isRaging = false;
+    public static int jumpAmpThreshold = 5000;
+    public static int jumpDeltaThreshold = 2000;
+    private final float groundY;
 
-    private final float groundY;       // Y position of the floor
     private static final float GRAVITY = 2.0f;
-    private static final float JUMP_FORCE = -35f;
+
+    // 🔥 spike detection
+    private long lastJumpTime = 0;
+    private int lastAmp = 0;
 
     public Player(float startX, float groundY) {
         this.x = startX;
@@ -23,27 +31,27 @@ public class Player {
 
     public void update(AudioEngine.VoiceLevel level, int amplitude) {
 
-        boolean isShouting = (level == AudioEngine.VoiceLevel.SHOUT || level == AudioEngine.VoiceLevel.RAGE);
+        // =========================
+        // 🔥 SMART JUMP (LOUD SPIKE ONLY)
+        // =========================
+        int delta = amplitude - lastAmp;
 
-        if (isShouting) {
-            // Normalize amplitude
-            float normalized = Math.min(amplitude / 6000f, 1f);
+        if (amplitude > jumpAmpThreshold
+                && delta > jumpDeltaThreshold
+                && isOnGround
+                && System.currentTimeMillis() - lastJumpTime > 500) {
 
-            // Smooth upward acceleration
-            velY += (-5f - normalized * 15f);
-
-// cap upward speed (no rocket glitch 💀)
-            if (velY < -28f) velY = -28f;
-
-        } else {
-            // Gravity
-            velY += GRAVITY;
+            jump(amplitude);
+            lastJumpTime = System.currentTimeMillis();
         }
 
-        // Apply movement
+        // =========================
+        // 🧠 PHYSICS
+        // =========================
+        velY += GRAVITY;
         y += velY;
 
-        // Ground check
+        // Ground collision
         if (y >= groundY - height) {
             y = groundY - height;
             velY = 0;
@@ -51,14 +59,12 @@ public class Player {
         } else {
             isOnGround = false;
         }
-        // Ceiling clamp — can't fly off screen
-        if (y < 10) {
-            y = 10;
-            velY = 0;
-        }
 
-        // Voice → speed mapping
+        // =========================
+        // 🏃 SPEED CONTROL
+        // =========================
         switch (level) {
+
             case SILENT:
                 speed = 0;
                 isRaging = false;
@@ -89,11 +95,9 @@ public class Player {
     public void jump(int amplitude) {
         if (isOnGround) {
 
-            // Normalize amplitude (0 → ~8000)
             float normalized = Math.min(amplitude / 6000f, 1f);
 
-            // Base jump + extra boost
-            float jumpForce = -25f - (normalized * 25f) - random.nextFloat() * 5;
+            float jumpForce = -32f - (normalized * 28f);
 
             velY = jumpForce;
             isOnGround = false;
@@ -106,6 +110,9 @@ public class Player {
         isOnGround = true;
         speed = 0;
         isRaging = false;
+
+        lastAmp = 0;
+        lastJumpTime = 0;
     }
 
     public RectF getBounds() {

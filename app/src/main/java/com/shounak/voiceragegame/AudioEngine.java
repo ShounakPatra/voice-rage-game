@@ -6,40 +6,45 @@ import android.media.MediaRecorder;
 
 public class AudioEngine {
 
-    // Constants for mic setup
     private static final int SAMPLE_RATE = 44100;
-    private static final int CHANNEL = AudioFormat.CHANNEL_IN_MONO;
-    private static final int ENCODING = AudioFormat.ENCODING_PCM_16BIT;
+    private static final int CHANNEL     = AudioFormat.CHANNEL_IN_MONO;
+    private static final int ENCODING    = AudioFormat.ENCODING_PCM_16BIT;
     private static final int BUFFER_SIZE = AudioRecord.getMinBufferSize(
             SAMPLE_RATE, CHANNEL, ENCODING);
 
     private AudioRecord audioRecord;
-    private boolean isRecording = false;
-    private volatile int currentAmplitude = 0; // volatile = thread-safe read
+    private boolean isRecording           = false;
+    private volatile int currentAmplitude = 0;
 
-    // Voice levels (the whole game is based on this)
     public enum VoiceLevel {
-        SILENT,  // Dead silent
-        WHISPER, // Very quiet
-        NORMAL,  // Normal talking
-        SHOUT,   // Yelling
-        RAGE     // Full send 💀
+        SILENT, WHISPER, NORMAL, SHOUT, RAGE
     }
 
-    public void start() {
-        audioRecord = new AudioRecord(
-                MediaRecorder.AudioSource.MIC,
-                SAMPLE_RATE, CHANNEL, ENCODING, BUFFER_SIZE);
-        isRecording = true;
-        audioRecord.startRecording();
+    public synchronized void start() {
+        if (isRecording) return;
+        try {
+            if (audioRecord == null) {
+                audioRecord = new AudioRecord(
+                        MediaRecorder.AudioSource.MIC,
+                        SAMPLE_RATE, CHANNEL, ENCODING, BUFFER_SIZE);
+            }
+            if (audioRecord.getState() != AudioRecord.STATE_INITIALIZED) {
+                return;
+            }
+            isRecording = true;
+            audioRecord.startRecording();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
 
-        // Background thread — constantly reading mic
         new Thread(() -> {
             short[] buffer = new short[BUFFER_SIZE];
             while (isRecording) {
-                int read = audioRecord.read(buffer, 0, BUFFER_SIZE);
+                AudioRecord record = audioRecord;
+                if (record == null || record.getState() != AudioRecord.STATE_INITIALIZED) break;
+                int read = record.read(buffer, 0, BUFFER_SIZE);
                 if (read > 0) {
-                    // Calculate RMS amplitude (basically: how loud are you rn)
                     long sum = 0;
                     for (int i = 0; i < read; i++) {
                         sum += (long) buffer[i] * buffer[i];
@@ -47,14 +52,20 @@ public class AudioEngine {
                     currentAmplitude = (int) Math.sqrt((double) sum / read);
                 }
             }
-        }).start();
+        }, "AudioEngine-Thread").start();
     }
 
-    public void stop() {
+    public synchronized void stop() {
         isRecording = false;
         if (audioRecord != null) {
-            audioRecord.stop();
-            audioRecord.release();
+            try {
+                if (audioRecord.getRecordingState() == AudioRecord.RECORDSTATE_RECORDING) {
+                    audioRecord.stop();
+                }
+                audioRecord.release();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             audioRecord = null;
         }
     }
@@ -63,12 +74,11 @@ public class AudioEngine {
         return currentAmplitude;
     }
 
-    // Convert raw amplitude number into a readable voice level
     public VoiceLevel getVoiceLevel() {
-        if (currentAmplitude < 150)       return VoiceLevel.SILENT;
-        else if (currentAmplitude < 600)  return VoiceLevel.WHISPER;
-        else if (currentAmplitude < 1800) return VoiceLevel.NORMAL;
-        else if (currentAmplitude < 5000) return VoiceLevel.SHOUT;
+        if      (currentAmplitude < 200)  return VoiceLevel.SILENT;
+        else if (currentAmplitude < 900)  return VoiceLevel.WHISPER;
+        else if (currentAmplitude < 3000) return VoiceLevel.NORMAL;
+        else if (currentAmplitude < 7000) return VoiceLevel.SHOUT;
         else                              return VoiceLevel.RAGE;
     }
 }
