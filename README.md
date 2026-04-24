@@ -1,6 +1,6 @@
 # 🎤 Voice Rage Game
 <p align="center">
-  <img src="YOUR_GIF_OR_IMAGE" width="700"/>
+  <img src="https://github.com/user-attachments/assets/cb27c261-ddad-4a01-843c-ff04d35870f7" width="700"/>
 </p>
 > A chaotic voice-controlled runner where your mic decides if you survive… or get clapped 💀🔥
 
