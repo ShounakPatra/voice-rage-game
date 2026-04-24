@@ -23,7 +23,6 @@
 ---
 
 ## 🎮 Gameplay
-
 ## Pick Your Mode First
 When you open the game, you'll see 3 buttons. Tap the one that matches your environment:
 
@@ -97,10 +96,10 @@ Every 100 points the speed increases. It gets genuinely unhinged after score 200
 
 ## 📌 Roadmap
 
-- [ ] Add background music
-- [ ] Add leaderboard system
-- [ ] Improve voice accuracy
-- [ ] Add more obstacle types
+- [ ] Added background music
+- [ ] Added leaderboard system
+- [ ] Improved voice accuracy
+- [ ] Added more obstacle types
 
 ---
 
