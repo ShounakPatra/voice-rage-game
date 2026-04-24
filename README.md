@@ -91,6 +91,15 @@ Every 100 points the speed increases. It gets genuinely unhinged after score 200
 
 ---
 
+## 📌 Roadmap
+
+- [ ] Add background music
+- [ ] Add leaderboard system
+- [ ] Improve voice accuracy
+- [ ] Add more obstacle types
+
+---
+
 ## 🛠 Tech Stack
 
 - Java (Android)
@@ -129,8 +138,7 @@ Found a bug or have an idea?
 
 👉 Open an issue here:  
 https://github.com/ShounakPatra/voice-rage-game/issues
-Or,
-shounakpatra68@gmail.com
+Or email: **shounakpatra68@gmail.com**
 
 Please include:
 - Device name 📱
@@ -144,4 +152,8 @@ Made with chaos by **Shounak** 🚀
 
 ---
 
+## 📄 License
+
+This project is licensed under the MIT License.
+---
 💀 If you're still alive after v2.0… you're built differently.
