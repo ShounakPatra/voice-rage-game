@@ -1,5 +1,7 @@
 # 🎤 Voice Rage Game
-
+<p align="center">
+  <img src="YOUR_GIF_OR_IMAGE" width="700"/>
+</p>
 > A chaotic voice-controlled runner where your mic decides if you survive… or get clapped 💀🔥
 
 ![Version](https://img.shields.io/badge/version-2.0-blue)
@@ -10,15 +12,17 @@
 
 ## 📥 Download
 
-👉 [Download APK (v2.0)](https://github.com/ShounakPatra/voice-rage-game/releases/latest)
+<p align="center">
+  <a href="https://github.com/ShounakPatra/voice-rage-game/releases/latest">
+    <img src="https://img.shields.io/badge/Download-APK_v2.0-blue?style=for-the-badge"/>
+  </a>
+</p>
 
 ⚠️ Allow "Install from unknown sources" on your device before installing.
 
 ---
 
 ## 🎮 Gameplay
-
----
 
 ## Pick Your Mode First
 When you open the game, you'll see 3 buttons. Tap the one that matches your environment:
@@ -30,7 +34,7 @@ When you open the game, you'll see 3 buttons. Tap the one that matches your envi
 ---
 
 ## Make a Sound to Start
-After picking your mode, the game waits. Make any sound and your bootleg Mario guy starts running automatically.
+After picking your mode, the game waits. Make any sound and your character starts running automatically.
 
 ---
 
