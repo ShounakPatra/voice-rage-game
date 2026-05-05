@@ -2,13 +2,20 @@
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/355e0248-ea4b-4a5c-ba56-4fb2ba669e6f" width="700"/>
-</p><p align="center">
+</p>
+
+<p align="center">
   <b>A voice-controlled endless runner where your reflexes — and your voice — decide how far you survive.</b>
-</p><p align="center">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/stars/ShounakPatra/vocex-run?style=social"/>
   <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
-</p>---
+</p>
+
+---
 
 📥 Download
 
@@ -16,7 +23,9 @@
   <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
     <img src="https://img.shields.io/badge/Download-v5.0_APK-0A66C2?style=for-the-badge&logo=android&logoColor=white"/>
   </a>
-</p><p align="center">
+</p>
+
+<p align="center">
   <sub>Enable "Install unknown apps" on your device before installing.</sub>
 </p>---
 
