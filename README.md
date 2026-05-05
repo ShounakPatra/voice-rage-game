@@ -15,7 +15,6 @@
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
 </p>
 
----
 
 📥 Download
 
