@@ -88,7 +88,8 @@ Each mode adjusts voice thresholds for consistent gameplay.
 ## 📸 Gameplay Preview
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/f6591827-e8aa-4880-a514-b19297b66cc2" width="300"/>
+  <img src="<img width="1600" height="709" alt="image" src="https://github.com/user-attachments/assets/65d2bff2-6f7a-44e1-84e7-12fcd6b6cebb" />
+" width="300"/>
 </p>
 
 ---
