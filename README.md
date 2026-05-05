@@ -4,36 +4,41 @@
   <img src="https://github.com/user-attachments/assets/cb27c261-ddad-4a01-843c-ff04d35870f7" width="700"/>
 </p>
 
-> A voice-controlled endless runner where your reflexes — and your voice — decide how far you survive.
+<p align="center">
+  <b>A voice-controlled endless runner where your reflexes — and your voice — decide how far you survive.</b>
+</p>
 
----
-
-![Version](https://img.shields.io/badge/version-5.0-blue)
-![Platform](https://img.shields.io/badge/platform-Android-green)
-![Status](https://img.shields.io/badge/status-active-success)
+<p align="center">
+  <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
+  <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
+</p>
 
 ---
 
 ## 📥 Download
 
 <p align="center">
-  <a href="https://github.com/ShounakPatra/vocex-run/releases">
-    <img src="https://img.shields.io/badge/Download-Latest_APK-blue?style=for-the-badge"/>
+  <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
+    <img src="https://img.shields.io/badge/Download-v5.0_APK-0A66C2?style=for-the-badge&logo=android&logoColor=white"/>
   </a>
+</p>
+
+<p align="center">
+  <sub>Enable "Install unknown apps" on your device before installing.</sub>
 </p>
 
 ---
 
 ## 🎮 Overview
 
-Vocex Run is a real-time voice-controlled endless runner where:
+Vocex Run is a real-time voice-controlled endless runner where your microphone replaces traditional controls.
 
-* Silence slows you down
+* Silence slows movement
 * Speaking increases speed
 * Sharp sounds trigger jumps
 
-There are no buttons. No touch controls.
-Only your voice.
+There are no buttons. No touch controls. Only your voice.
 
 ---
 
@@ -50,40 +55,40 @@ Precision matters more than volume. Timing is everything.
 
 ## 🧠 Game Modes
 
-* **Silent Mode** — for quiet environments
-* **Normal Mode** — balanced gameplay
-* **Rage Mode** — for loud/noisy environments
+* **Silent Mode** — Optimized for quiet environments
+* **Normal Mode** — Balanced for everyday use
+* **Rage Mode** — Designed for noisy surroundings
 
-Each mode adjusts voice detection thresholds.
+Each mode adjusts voice thresholds for consistent gameplay.
 
 ---
 
 ## 🚀 What’s New in v5.0
 
-* ✈️ Flying enemies added for late-game difficulty
-* 🌤️ Dynamic shadows based on lighting
-* ⚡ Near-instant jump response
-* 🔄 Ceiling bounce instead of going off-screen
-* 🎯 Improved microphone handling across devices
-* ⚙️ Settings menu with sensitivity control
-* 🧩 General performance & gameplay improvements
+* ✈️ Added flying enemies for late-game difficulty
+* 🌤️ Dynamic shadows based on lighting conditions
+* ⚡ Near-instant jump responsiveness
+* 🔄 Ceiling collision system (no more off-screen glitches)
+* 🎯 Improved microphone consistency across devices
+* ⚙️ Settings menu with sensitivity controls
+* 🧩 Performance and gameplay refinements
 
 ---
 
 ## ✨ Features
 
-* 🎤 Real-time voice control
-* ⚡ Dynamic difficulty
-* 🎯 Smooth physics & collision
-* 🔊 Audio-based gameplay feedback
-* 🎮 Multiple game modes
+* 🎤 Real-time voice-controlled gameplay
+* ⚡ Dynamic difficulty scaling
+* 🎯 Smooth physics and collision system
+* 🔊 Audio-driven feedback
+* 🎮 Multiple gameplay modes
 
 ---
 
 ## 📸 Gameplay Preview
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cb27c261-ddad-4a01-843c-ff04d35870f7" width="300"/>
+  <img src="https://github.com/user-attachments/assets/f6591827-e8aa-4880-a514-b19297b66cc2" width="300"/>
 </p>
 
 ---
@@ -92,7 +97,7 @@ Each mode adjusts voice detection thresholds.
 
 1. Clone the repository
 2. Open in Android Studio
-3. Connect your device
+3. Connect your Android device
 4. Build & Run
 
 ---
@@ -100,12 +105,13 @@ Each mode adjusts voice detection thresholds.
 ## ⚠️ Notes
 
 * Microphone permission is required
-* Performance depends on device mic quality
+* Performance may vary depending on device microphone quality
 
 ---
 
 ## 🐛 Issues & Feedback
 
+Report bugs or request features:
 👉 https://github.com/ShounakPatra/vocex-run/issues
 
 ---
