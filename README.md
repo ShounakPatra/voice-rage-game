@@ -1,7 +1,8 @@
 # 🎤 Vocex Run
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/cb27c261-ddad-4a01-843c-ff04d35870f7" width="700"/>
+  <img src="<img width="1600" height="709" alt="image" src="https://github.com/user-attachments/assets/355e0248-ea4b-4a5c-ba56-4fb2ba669e6f" />
+" width="700"/>
 </p>
 
 <p align="center">
