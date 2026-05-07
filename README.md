@@ -11,7 +11,6 @@
   <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
-  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Total%20Downloads&color=555"/>
 </p>
 
 ---
@@ -27,6 +26,7 @@
   <img src="https://img.shields.io/badge/Free-No%20Ads-222222?style=flat-square"/>
   <img src="https://img.shields.io/badge/Min%20SDK-Android%208.0+-222222?style=flat-square&logo=android&logoColor=3DDC84"/>
   <img src="https://img.shields.io/badge/Size-~12%20MB-222222?style=flat-square"/>
+  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Total%20Downloads&color=555"/>
 </p>
 <p align="center">
   <sub>⚠️ Enable <b>"Install unknown apps"</b> before installing the APK.</sub>
