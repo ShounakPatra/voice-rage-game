@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Voice Rage Game"
+rootProject.name = "Vocex Run"
 include(":app")
