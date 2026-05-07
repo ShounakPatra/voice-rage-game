@@ -11,6 +11,7 @@
   <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
+  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Total%20Downloads&color=555"/>
 </p>
 
 ---
