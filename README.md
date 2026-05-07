@@ -19,18 +19,23 @@
 
 <p align="center">
   <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
-    <img src="https://img.shields.io/badge/⬇%20Download-VocexRun%20v5.0%20APK-3DDC84?style=flat-square&logo=android&logoColor=white&labelColor=000000" height="48"/>
+    <img src="https://img.shields.io/badge/⬇%20Download-VocexRun%20v5.0%20APK-3DDC84?style=flat-square&logo=android&logoColor=white&labelColor=000000" height="60"/>
   </a>
 </p>
 <p align="center">
-  <img src="https://img.shields.io/badge/Free-No%20Ads-222222?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Min%20SDK-Android%208.0+-222222?style=flat-square&logo=android&logoColor=3DDC84"/>
-  <img src="https://img.shields.io/badge/Size-~12%20MB-222222?style=flat-square"/>
-  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Total%20Downloads&color=555"/>
+  <img src="https://img.shields.io/badge/Free-No%20Ads-111111?style=flat-square"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Min%20SDK-Android%208.0+-111111?style=flat-square&logo=android&logoColor=3DDC84"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Size-~12%20MB-111111?style=flat-square"/>
+  &nbsp;
+  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Downloads&color=111111&labelColor=1a1a1a"/>
 </p>
+
 <p align="center">
   <sub>⚠️ Enable <b>"Install unknown apps"</b> before installing the APK.</sub>
 </p>
+
 ---
 
 ## 🎮 Overview
