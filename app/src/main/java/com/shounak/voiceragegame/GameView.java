@@ -99,6 +99,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private String runEventBannerTitle = "";
     private String runEventBannerSubtitle = "";
     private boolean skyRaidAnnounced = false;
+    private boolean openingLoadingScreen = true;
+    private long openingLoadingStartTime = 0L;
+    private int flyingWaveBandStart = -1;
+    private int flyingWaveCursor = 0;
+    private final int[] flyingWaveScores = new int[3];
     private static final float SHARE_BTN_SIZE = 80f;
     private static final float SHARE_BTN_MARGIN = 20f;
     private boolean isCapturingShare = false;
@@ -175,9 +180,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private long lastObstacleTime = 0;
     private static final long BASE_OBSTACLE_INTERVAL = 4200;
+    private static final long OPENING_LOADING_DURATION_MS = 2600L;
     private static final long CALIBRATION_DURATION_MS = 3000;
     private static final long CALIBRATION_WARMUP_MS = 350;
     private static final int CELESTIAL_CYCLE_SCORE = 300;
+    private static final int FLYING_WAVE_UNLOCK_SCORE = 300;
+    private static final int FLYING_WAVE_SCORE_BAND = 100;
+    private static final int FLYING_WAVES_PER_SCORE_BAND = 3;
     private static final float TWO_PI = (float)(Math.PI * 2.0);
 
     private static final String[] FAIL_MESSAGES = {
@@ -269,6 +278,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (inSettings) {
             inSettings = false;
             draggingSlider = false;
+            activeDropdown = DROPDOWN_NONE;
             saveSettings();
             vibrate(15);
             return false;
@@ -335,6 +345,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         applySlider();
         applyRenderingSettings();
         syncAudioCalibration();
+        startOpeningLoadingScreen();
 
         resume();
     }
@@ -407,6 +418,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             gamePaused = false;
             calibrating = false;
             skyRaidAnnounced = false;
+            resetFlyingWaveSchedule();
             runEventBannerUntil = 0;
         }
 
@@ -439,6 +451,193 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 android.graphics.Shader.TileMode.CLAMP));
 
         renderCacheReady = true;
+    }
+
+    private void startOpeningLoadingScreen() {
+        openingLoadingScreen = true;
+        openingLoadingStartTime = System.currentTimeMillis();
+    }
+
+    private boolean isOpeningLoadingScreenActive(long now) {
+        if (!openingLoadingScreen) {
+            return false;
+        }
+        if (openingLoadingStartTime <= 0L) {
+            openingLoadingStartTime = now;
+        }
+        if (now - openingLoadingStartTime < OPENING_LOADING_DURATION_MS) {
+            return true;
+        }
+        openingLoadingScreen = false;
+        return false;
+    }
+
+    private void drawOpeningLoadingScreen(Canvas canvas, long now) {
+        if (screenWidth <= 0 || screenHeight <= 0) {
+            canvas.drawColor(Color.rgb(4, 6, 18));
+            return;
+        }
+
+        long elapsedMs = Math.max(0L, now - openingLoadingStartTime);
+        float progress = MathUtils.clamp01(elapsedMs / (float) OPENING_LOADING_DURATION_MS);
+        float eased = MathUtils.smoothStep(progress);
+        float cx = screenWidth / 2f;
+        float cy = screenHeight / 2f;
+
+        auxPaint.setShader(new android.graphics.LinearGradient(
+                0, 0, screenWidth, screenHeight,
+                new int[]{
+                        Color.rgb(3, 5, 16),
+                        Color.rgb(12, 18, 42),
+                        Color.rgb(50, 28, 18)
+                },
+                new float[]{0f, 0.62f, 1f},
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, screenWidth, screenHeight, auxPaint);
+        auxPaint.setShader(null);
+
+        float pulse = 0.5f + 0.5f * (float) Math.sin(elapsedMs * 0.006f);
+        auxPaint.setShader(new android.graphics.RadialGradient(
+                cx, screenHeight * 0.55f, Math.max(screenWidth, screenHeight) * 0.72f,
+                new int[]{
+                        Color.argb((int) (120 + pulse * 42), 255, 118, 28),
+                        Color.argb(58, 62, 142, 255),
+                        Color.TRANSPARENT
+                },
+                new float[]{0f, 0.42f, 1f},
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawCircle(cx, screenHeight * 0.55f, Math.max(screenWidth, screenHeight) * 0.72f, auxPaint);
+        auxPaint.setShader(null);
+
+        int sparkCount = premiumRendering ? 88 : 46;
+        for (int i = 0; i < sparkCount; i++) {
+            float sx = ((i * 173 + elapsedMs * (0.030f + (i % 5) * 0.006f)) % (screenWidth + 180f)) - 90f;
+            float sy = (i * 83 + (i % 7) * 31) % Math.max(1f, screenHeight * 0.72f);
+            float shimmer = 0.45f + 0.55f * (float) Math.sin(elapsedMs * 0.009f + i * 1.37f);
+            int alpha = (int) (shimmer * (i % 6 == 0 ? 150 : 82));
+            paint.setColor(Color.argb(alpha, i % 4 == 0 ? 255 : 180,
+                    i % 4 == 0 ? 208 : 220, i % 4 == 0 ? 118 : 255));
+            canvas.drawCircle(sx, sy, i % 9 == 0 ? 2.8f : 1.4f, paint);
+        }
+
+        float horizonY = screenHeight * 0.72f;
+        paint.setColor(Color.argb(145, 0, 0, 0));
+        canvas.drawRect(0, horizonY + 20f, screenWidth, screenHeight, paint);
+        auxPaint.setShader(new android.graphics.LinearGradient(
+                0, horizonY - 18f, 0, horizonY + 34f,
+                Color.argb(0, 255, 184, 70),
+                Color.argb(190, 255, 108, 28),
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(0, horizonY - 18f, screenWidth, horizonY + 34f, auxPaint);
+        auxPaint.setShader(null);
+
+        paint.setTextAlign(Paint.Align.CENTER);
+        paint.setTypeface(android.graphics.Typeface.create(
+                android.graphics.Typeface.DEFAULT_BOLD, android.graphics.Typeface.BOLD));
+        paint.setColor(Color.argb(95, 255, 108, 28));
+        paint.setTextSize(Math.min(96f, screenWidth * 0.085f));
+        float titleY = screenHeight * 0.20f;
+        canvas.drawText("VOCEX RUN", cx + 4f, titleY + 5f, paint);
+        paint.setColor(Color.WHITE);
+        canvas.drawText("VOCEX RUN", cx, titleY, paint);
+        paint.setTypeface(android.graphics.Typeface.DEFAULT);
+
+        paint.setTextSize(Math.min(26f, screenWidth * 0.026f));
+        paint.setColor(Color.argb(190, 218, 232, 255));
+        canvas.drawText("CINEMATIC VOICE ENGINE", cx, titleY + 42f, paint);
+
+        drawLoadingRunnerSilhouette(canvas, cx, screenHeight * 0.56f, elapsedMs);
+
+        float barW = Math.min(screenWidth * 0.58f, 720f);
+        float barH = 34f;
+        float barLeft = cx - barW / 2f;
+        float barTop = screenHeight * 0.78f;
+        RectF barOuter = new RectF(barLeft - 8f, barTop - 8f,
+                barLeft + barW + 8f, barTop + barH + 8f);
+        drawPremiumButtonSurface(canvas, barOuter,
+                Color.rgb(34, 42, 68), Color.rgb(8, 11, 24),
+                false, true, 0.38f + pulse * 0.18f);
+        paint.setShader(null);
+        paint.setColor(Color.argb(90, 255, 255, 255));
+        canvas.drawRoundRect(new RectF(barLeft, barTop, barLeft + barW, barTop + barH),
+                17f, 17f, paint);
+        auxPaint.setShader(new android.graphics.LinearGradient(
+                barLeft, barTop, barLeft + barW, barTop + barH,
+                Color.rgb(255, 176, 58),
+                Color.rgb(255, 72, 28),
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(new RectF(barLeft, barTop,
+                barLeft + barW * eased, barTop + barH), 17f, 17f, auxPaint);
+        auxPaint.setShader(null);
+
+        float sweepX = barLeft + barW * ((elapsedMs * 0.0013f) % 1f);
+        paint.setColor(Color.argb(115, 255, 255, 255));
+        canvas.drawRoundRect(new RectF(sweepX - 34f, barTop + 4f,
+                sweepX + 34f, barTop + barH - 4f), 14f, 14f, paint);
+
+        paint.setTextSize(24f);
+        paint.setColor(Color.argb(210, 235, 240, 255));
+        canvas.drawText("LOADING " + Math.round(eased * 100f) + "%",
+                cx, barTop + barH + 42f, paint);
+
+        paint.setColor(Color.argb(175, 0, 0, 0));
+        canvas.drawRect(0, 0, screenWidth, 34f, paint);
+        canvas.drawRect(0, screenHeight - 34f, screenWidth, screenHeight, paint);
+        paint.setTextAlign(Paint.Align.LEFT);
+        paint.setTypeface(android.graphics.Typeface.DEFAULT);
+        paint.setStyle(Paint.Style.FILL);
+    }
+
+    private void drawLoadingRunnerSilhouette(Canvas canvas, float cx, float cy, long elapsedMs) {
+        float scale = Math.min(screenWidth, screenHeight) * 0.0024f;
+        float w = 118f * scale;
+        float h = 148f * scale;
+        float x = cx - w * 0.50f;
+        float y = cy - h * 0.58f;
+        float phase = elapsedMs * 0.012f;
+        float stride = (float) Math.sin(phase);
+        float oppositeStride = (float) Math.sin(phase + Math.PI);
+
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeWidth(Math.max(7f, w * 0.09f));
+        paint.setColor(Color.argb(215, 7, 10, 20));
+        canvas.drawLine(x + w * 0.46f, y + h * 0.44f,
+                x + w * (0.24f + oppositeStride * 0.18f), y + h * 0.82f, paint);
+        canvas.drawLine(x + w * 0.55f, y + h * 0.44f,
+                x + w * (0.80f + stride * 0.18f), y + h * 0.82f, paint);
+        paint.setStrokeWidth(Math.max(5f, w * 0.065f));
+        canvas.drawLine(x + w * 0.40f, y + h * 0.28f,
+                x + w * (0.12f + stride * 0.14f), y + h * 0.55f, paint);
+        canvas.drawLine(x + w * 0.62f, y + h * 0.30f,
+                x + w * (0.92f + oppositeStride * 0.14f), y + h * 0.54f, paint);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+        paint.setStyle(Paint.Style.FILL);
+
+        auxPaint.setShader(new android.graphics.LinearGradient(
+                x, y, x + w, y + h,
+                Color.rgb(255, 124, 36),
+                Color.rgb(35, 74, 190),
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRoundRect(new RectF(x + w * 0.25f, y + h * 0.16f,
+                x + w * 0.76f, y + h * 0.54f), w * 0.16f, w * 0.16f, auxPaint);
+        auxPaint.setShader(null);
+
+        paint.setColor(Color.rgb(255, 200, 138));
+        canvas.drawRoundRect(new RectF(x + w * 0.30f, y - h * 0.03f,
+                x + w * 0.70f, y + h * 0.20f), w * 0.13f, w * 0.13f, paint);
+        paint.setColor(Color.rgb(232, 48, 34));
+        canvas.drawRoundRect(new RectF(x + w * 0.24f, y - h * 0.09f,
+                x + w * 0.76f, y + h * 0.06f), w * 0.09f, w * 0.09f, paint);
+
+        for (int i = 0; i < 3; i++) {
+            float t = ((elapsedMs * 0.0024f) + i * 0.28f) % 1f;
+            paint.setColor(Color.argb((int) ((1f - t) * 92f), 255, 126, 36));
+            canvas.drawRoundRect(new RectF(x - w * (0.22f + t * 0.72f),
+                    y + h * (0.26f + i * 0.11f),
+                    x + w * (0.26f - t * 0.72f),
+                    y + h * (0.30f + i * 0.11f)), 8f, 8f, paint);
+        }
     }
 
     public void update() {
@@ -510,11 +709,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (now - lastObstacleTime > interval) {
                 int type = obstacleRandom.nextInt(3);
                 int runScore = score / 10;
-                boolean flyingUnlocked = runScore >= 300;
                 float heightScale = Math.min(0.82f + (warmup * 0.18f) + (score / 2000f), 2.2f);
 
-                if (flyingUnlocked && shouldSpawnFlyingEnemyWave(runScore)) {
+                if (consumeScheduledFlyingWave(runScore)) {
                     spawnFlyingEnemyWave(runScore, scrollSpeed);
+                    showRunEventBanner("SKY RAID INBOUND", "Triple flyer formation entering", 1450L);
                 } else if (type == 0) {
                     int h = (int) (55 * heightScale);
                     obstacles.add(new Obstacle(screenWidth, groundY - h, 90, h));
@@ -583,16 +782,50 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return obstacleRandom.nextInt(100) < chance;
     }
 
+    private void resetFlyingWaveSchedule() {
+        flyingWaveBandStart = -1;
+        flyingWaveCursor = 0;
+        for (int i = 0; i < flyingWaveScores.length; i++) {
+            flyingWaveScores[i] = Integer.MAX_VALUE;
+        }
+    }
+
+    private boolean consumeScheduledFlyingWave(int runScore) {
+        if (runScore < FLYING_WAVE_UNLOCK_SCORE) {
+            return false;
+        }
+        prepareFlyingWaveBand(runScore);
+        if (flyingWaveCursor < FLYING_WAVES_PER_SCORE_BAND
+                && runScore >= flyingWaveScores[flyingWaveCursor]) {
+            flyingWaveCursor++;
+            return true;
+        }
+        return false;
+    }
+
+    private void prepareFlyingWaveBand(int runScore) {
+        int bandStart = Math.max(FLYING_WAVE_UNLOCK_SCORE,
+                (runScore / FLYING_WAVE_SCORE_BAND) * FLYING_WAVE_SCORE_BAND);
+        if (bandStart == flyingWaveBandStart) {
+            return;
+        }
+        flyingWaveBandStart = bandStart;
+        flyingWaveCursor = 0;
+        int segment = FLYING_WAVE_SCORE_BAND / FLYING_WAVES_PER_SCORE_BAND;
+        for (int i = 0; i < FLYING_WAVES_PER_SCORE_BAND; i++) {
+            int segmentStart = bandStart + 6 + i * segment;
+            int segmentEnd = i == FLYING_WAVES_PER_SCORE_BAND - 1
+                    ? bandStart + FLYING_WAVE_SCORE_BAND - 6
+                    : bandStart + (i + 1) * segment - 5;
+            int span = Math.max(1, segmentEnd - segmentStart + 1);
+            flyingWaveScores[i] = segmentStart + obstacleRandom.nextInt(span);
+        }
+    }
+
     private void spawnFlyingEnemyWave(int runScore, float scrollSpeed) {
         int w = premiumRendering ? 112 : 96;
         int h = premiumRendering ? 72 : 62;
-        int count = 1;
-        if (runScore >= 380 && obstacleRandom.nextInt(100) < 42) {
-            count++;
-        }
-        if (runScore >= 680 && obstacleRandom.nextInt(100) < 28) {
-            count++;
-        }
+        int count = runScore >= FLYING_WAVE_UNLOCK_SCORE ? 3 : 1;
 
         float gap = screenWidth * 0.26f + scrollSpeed * 11f + obstacleRandom.nextInt(70);
         for (int i = 0; i < count; i++) {
@@ -615,6 +848,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         AudioEngine.VoiceLevel level = audioEngine.getVoiceLevel();
         long now2 = System.currentTimeMillis();
         float daylight = getDaylightAmount();
+        if (isOpeningLoadingScreenActive(now2)) {
+            drawOpeningLoadingScreen(canvas, now2);
+            return;
+        }
 
         drawScoreDrivenSky(canvas, daylight);
 
@@ -859,10 +1096,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
         // ── Legs ────────────────────────────────────────────────────────
         // FIX: slower, more human gait — was 0.0105f which was too rapid
-        float runRate = gameStarted ? 0.0062f + Math.min(player.speed, 18f) * 0.00045f : 0.0045f;
-        float gaitPhase = (animT * runRate) % TWO_PI;
+        float speed01 = Math.max(0f, Math.min(1f, player.speed / 18f));
+        float gaitPhase = gameStarted ? player.gaitPhase : 0f;
         float bodyBob = onGround
-                ? Math.abs((float) Math.sin(gaitPhase)) * 3.6f
+                ? Math.abs((float) Math.sin(gaitPhase)) * 3.8f * speed01
                 : Math.max(-4f, Math.min(5f, player.velY * 0.10f));
         py += bodyBob;
         drawRunnerLeg(canvas, px, py, pw, ph, gaitPhase + (float) Math.PI, false, onGround,
@@ -1306,6 +1543,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             performClick();
         }
 
+        if (isOpeningLoadingScreenActive(System.currentTimeMillis())) {
+            return true;
+        }
+
         // ── First-time prompt ─────────────────────────────────────────────
         if (showingFirstTimePrompt && action == MotionEvent.ACTION_DOWN) {
             float cx = screenWidth / 2f, cy = screenHeight / 2f;
@@ -1531,6 +1772,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         paint.setStyle(Paint.Style.FILL);
         paint.setColor(Color.argb(232, 4, 5, 17));
         canvas.drawRect(0, 0, screenWidth, screenHeight, paint);
+        drawHomeCinematicBackdrop(canvas, now);
 
         drawHomeSettingsButton(canvas);
 
@@ -1554,6 +1796,50 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         drawHomeStartButton(canvas, now);
         paint.setTypeface(android.graphics.Typeface.DEFAULT);
         paint.setTextAlign(Paint.Align.LEFT);
+    }
+
+    private void drawHomeCinematicBackdrop(Canvas canvas, long now) {
+        auxPaint.setShader(new android.graphics.LinearGradient(
+                0, 0, screenWidth, screenHeight,
+                new int[]{Color.rgb(3, 5, 18), Color.rgb(18, 24, 45),
+                        Color.rgb(58, 28, 18)},
+                new float[]{0f, 0.62f, 1f},
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, screenWidth, screenHeight, auxPaint);
+        auxPaint.setShader(null);
+
+        float pulse = 0.5f + 0.5f * (float) Math.sin(now * 0.0035f);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(2f);
+        for (int i = 0; i < 4; i++) {
+            float radius = screenWidth * (0.18f + i * 0.095f) + pulse * 18f;
+            paint.setColor(Color.argb(22 - i * 3, 255, 132, 58));
+            canvas.drawCircle(screenWidth * 0.50f, screenHeight * 0.34f, radius, paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
+
+        for (int i = 0; i < 32; i++) {
+            float sx = ((i * 137 + now * 0.018f) % (screenWidth + 80f)) - 40f;
+            float sy = 36f + (i * 83) % Math.max(1, (int) (screenHeight * 0.62f));
+            int alpha = 38 + (int) (26f * Math.sin(now * 0.002f + i));
+            paint.setColor(Color.argb(Math.max(10, alpha), 255, 202, 132));
+            canvas.drawCircle(sx, sy, i % 5 == 0 ? 2.4f : 1.4f, paint);
+        }
+
+        float horizon = screenHeight * 0.78f;
+        paint.setColor(Color.argb(95, 255, 94, 32));
+        paint.setStrokeWidth(3f);
+        canvas.drawLine(0, horizon, screenWidth, horizon - 18f, paint);
+        paint.setStrokeWidth(1.4f);
+        paint.setColor(Color.argb(58, 255, 190, 92));
+        for (int i = 0; i < 10; i++) {
+            float x = (i * screenWidth / 9f + now * 0.035f) % screenWidth;
+            canvas.drawLine(x, horizon + 6f, x + 72f, horizon - 8f, paint);
+        }
+
+        paint.setColor(Color.argb(210, 0, 0, 0));
+        canvas.drawRect(0, 0, screenWidth, 18f, paint);
+        canvas.drawRect(0, screenHeight - 18f, screenWidth, screenHeight, paint);
     }
 
     private void drawHomeSettingsButton(Canvas canvas) {
@@ -1996,7 +2282,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             if (handleGraphicsDropdownOptionTouch(tx, ty)) {
                 return true;
             }
-            activeDropdown = DROPDOWN_NONE;
+            boolean dropdownWasOpen = activeDropdown != DROPDOWN_NONE;
 
             // FIX: Per-tab reset button — works in every settings tab
             {
@@ -2074,6 +2360,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     toggleDropdown(DROPDOWN_GRAPHICS_QUALITY);
                     return true;
                 } else if (row == 1) {
+                    activeDropdown = DROPDOWN_NONE;
                     shadowsEnabled = !shadowsEnabled;
                     saveSettings();
                     vibrate(18);
@@ -2088,6 +2375,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     toggleDropdown(DROPDOWN_SHADOW_CASCADES);
                     return true;
                 } else if (row == 5) {
+                    activeDropdown = DROPDOWN_NONE;
                     softShadows = !softShadows;
                     shadowPresetIndex = 4;
                     saveSettings();
@@ -2098,6 +2386,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     return true;
                 }
             } else if (activeSettingsTab == SETTINGS_TAB_POST) {
+                activeDropdown = DROPDOWN_NONE;
                 float contentTop = getSettingsContentTop();
                 float left = Math.max(68f, screenWidth * 0.08f);
                 float right = screenWidth - left;
@@ -2114,6 +2403,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     return true;
                 }
             } else if (activeSettingsTab == SETTINGS_TAB_LIGHTING) {
+                activeDropdown = DROPDOWN_NONE;
                 float contentTop = getSettingsContentTop();
                 float left = Math.max(68f, screenWidth * 0.08f);
                 float right = screenWidth - left;
@@ -2126,6 +2416,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     return true;
                 }
             } else if (activeSettingsTab == SETTINGS_TAB_AUDIO) {
+                activeDropdown = DROPDOWN_NONE;
                 float contentTop = getSettingsContentTop();
                 float left = Math.max(68f, screenWidth * 0.08f);
                 float right = screenWidth - left;
@@ -2135,6 +2426,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     return true;
                 }
             } else if (activeSettingsTab == SETTINGS_TAB_GAMEPLAY) {
+                activeDropdown = DROPDOWN_NONE;
                 float contentTop = getSettingsContentTop();
                 float left = Math.max(68f, screenWidth * 0.08f);
                 float right = screenWidth - left;
@@ -2167,6 +2459,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     vibrate(24);
                     return true;
                 }
+            }
+            if (dropdownWasOpen) {
+                activeDropdown = DROPDOWN_NONE;
+                vibrate(10);
+                return true;
             }
         }
 
@@ -2321,13 +2618,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             default:
                 return false;
         }
-        float optionHeight = Math.max(42f, Math.min(52f, rowHeight * 0.86f));
+        float optionHeight = Math.max(50f, Math.min(64f, rowHeight * 0.88f));
         float top = rowTop + rowIndex * (rowHeight + gap) + rowHeight + 4f;
         float maxBottom = screenHeight - 24f;
         if (top + optionHeight * options.length > maxBottom) {
             top = rowTop + rowIndex * (rowHeight + gap) - optionHeight * options.length - 4f;
         }
-        float dropdownLeft = right - 320f;
+        float dropdownLeft = right - 350f;
         float dropdownRight = right - 28f;
         if (tx < dropdownLeft || tx > dropdownRight || ty < top || ty > top + optionHeight * options.length) {
             return false;
@@ -2773,11 +3070,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private float getGraphicsSettingsRowTop(float contentTop) {
-        return contentTop + 86f;
+        return contentTop + 92f;
     }
 
     private float getGraphicsSettingsGap() {
-        return 7f;
+        return 9f;
     }
 
     private int getGraphicsSettingsRowCount() {
@@ -2787,7 +3084,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private float getGraphicsSettingsRowHeight(float rowTop, float gap) {
         int rowCount = getGraphicsSettingsRowCount();
         float available = Math.max(320f, screenHeight - rowTop - 32f);
-        return Math.max(44f, Math.min(62f, (available - gap * (rowCount - 1)) / rowCount));
+        return Math.max(56f, Math.min(78f, (available - gap * (rowCount - 1)) / rowCount));
     }
 
     private void drawSettingsGraphicsTab(Canvas canvas, float contentTop) {
@@ -2967,10 +3264,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setColor(Color.WHITE);
         float height = bottom - top;
-        paint.setTextSize(Math.min(30f, height * 0.36f));
+        float titleSize = activeSettingsTab == SETTINGS_TAB_GRAPHICS
+                ? Math.min(34f, height * 0.43f)
+                : Math.min(30f, height * 0.36f);
+        float subtitleSize = activeSettingsTab == SETTINGS_TAB_GRAPHICS
+                ? Math.min(24f, height * 0.28f)
+                : Math.min(22f, height * 0.25f);
+        paint.setTextSize(titleSize);
         canvas.drawText(title, left + 28f, top + height * 0.43f, paint);
         paint.setColor(Color.argb(165, 220, 230, 245));
-        paint.setTextSize(Math.min(22f, height * 0.25f));
+        paint.setTextSize(subtitleSize);
         canvas.drawText(subtitle, left + 28f, top + height * 0.74f, paint);
 
         float switchW = 118f;
@@ -3041,20 +3344,28 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         paint.setShader(null);
         paint.setTextAlign(Paint.Align.LEFT);
         paint.setColor(Color.WHITE);
-        paint.setTextSize(Math.min(29f, height * 0.34f));
+        float titleSize = activeSettingsTab == SETTINGS_TAB_GRAPHICS
+                ? Math.min(34f, height * 0.43f)
+                : Math.min(29f, height * 0.34f);
+        float subtitleSize = activeSettingsTab == SETTINGS_TAB_GRAPHICS
+                ? Math.min(24f, height * 0.28f)
+                : Math.min(21f, height * 0.23f);
+        paint.setTextSize(titleSize);
         canvas.drawText(title, left + 28f, top + height * 0.40f, paint);
         paint.setColor(Color.argb(165, 220, 230, 245));
-        paint.setTextSize(Math.min(21f, height * 0.23f));
+        paint.setTextSize(subtitleSize);
         canvas.drawText(subtitle, left + 28f, top + height * 0.70f, paint);
 
-        RectF valueRect = new RectF(right - 220f, top + height * 0.18f,
+        RectF valueRect = new RectF(right - 250f, top + height * 0.16f,
                 right - 28f, bottom - height * 0.18f);
         drawPremiumButtonSurface(canvas, valueRect,
                 Color.rgb(255, 92, 28), Color.rgb(180, 40, 0), false, true, open ? 0.58f : 0.35f);
         paint.setShader(null);
         paint.setTextAlign(Paint.Align.CENTER);
         paint.setColor(Color.WHITE);
-        paint.setTextSize(Math.min(24f, height * 0.30f));
+        paint.setTextSize(activeSettingsTab == SETTINGS_TAB_GRAPHICS
+                ? Math.min(30f, height * 0.36f)
+                : Math.min(24f, height * 0.30f));
         canvas.drawText(value + (open ? " ^" : " v"), valueRect.centerX(), valueRect.centerY() + 8f, paint);
         paint.setTextAlign(Paint.Align.LEFT);
     }
@@ -3097,9 +3408,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 return;
         }
 
-        float optionHeight = Math.max(42f, Math.min(52f, rowHeight * 0.86f));
+        float optionHeight = Math.max(50f, Math.min(64f, rowHeight * 0.88f));
         float top = rowTop + rowIndex * (rowHeight + gap) + rowHeight + 4f;
-        float dropdownLeft = right - 320f;
+        float dropdownLeft = right - 350f;
         float dropdownRight = right - 28f;
         float maxBottom = screenHeight - 24f;
         if (top + optionHeight * options.length > maxBottom) {
@@ -3128,7 +3439,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             paint.setShader(null);
             paint.setTextAlign(Paint.Align.CENTER);
             paint.setColor(Color.WHITE);
-            paint.setTextSize(22f);
+            paint.setTextSize(27f);
             canvas.drawText(options[i], opt.centerX(), opt.centerY() + 8f, paint);
         }
         paint.setTextAlign(Paint.Align.LEFT);

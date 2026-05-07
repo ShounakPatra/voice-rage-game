@@ -26,17 +26,24 @@ public class CharacterRenderer {
         float shinLen = ph * 0.27f;
 
         float thighAngle = airborne
-                ? (nearLeg ? 0.55f : -0.32f)
-                : stride * 0.48f - 0.06f;
+                ? (nearLeg ? 0.42f : -0.34f)
+                : stride * 0.64f - 0.07f + (nearLeg ? 0.03f : -0.03f);
+        float kneeLift = Math.max(0f, recover);
+        float pushBack = Math.max(0f, -stride);
         float shinAngle = airborne
-                ? (nearLeg ? 0.82f : 0.18f)
-                : -stride * 0.62f + Math.max(0f, -recover) * 0.22f;
+                ? (nearLeg ? 0.62f : 0.06f)
+                : thighAngle * -0.34f - stride * 0.58f
+                + kneeLift * 0.44f + pushBack * 0.18f + 0.05f;
 
         float kneeX = hipX + (float) Math.sin(thighAngle) * thighLen;
         float kneeY = hipY + (float) Math.cos(thighAngle) * thighLen;
         float ankleX = kneeX + (float) Math.sin(shinAngle) * shinLen;
         float ankleY = kneeY + (float) Math.cos(shinAngle) * shinLen;
-        if (!airborne && ankleY > groundY - 3f) ankleY = groundY - 3f;
+        if (!airborne && ankleY > groundY - 3f) {
+            float correction = ankleY - (groundY - 3f);
+            kneeY -= correction * 0.38f;
+            ankleY = groundY - 3f;
+        }
 
         int alpha = nearLeg ? 255 : 185;
 
@@ -49,24 +56,26 @@ public class CharacterRenderer {
         drawLegSegment(canvas, paint, kneeX, kneeY, ankleX, ankleY, ph * 0.135f,
                 gv.withAlpha(shadowColor, alpha), gv.withAlpha(mainColor, alpha));
 
-        float footAngle = stride * 0.18f + (airborne ? -0.18f : 0.04f);
-        float footLen = pw * 0.36f;
+        float footAngle = airborne
+                ? -0.20f + stride * 0.26f
+                : -0.05f + stride * 0.14f;
+        float footLen = pw * (0.36f + Math.max(0f, stride) * 0.05f);
         float footH = ph * 0.065f;
         canvas.save();
         canvas.rotate((float) Math.toDegrees(footAngle), ankleX, ankleY);
 
         paint.setColor(gv.withAlpha(shoeColor, alpha));
         canvas.drawRoundRect(new RectF(
-                ankleX - pw * 0.14f, ankleY - footH * 0.5f,
-                ankleX + pw * 0.05f, ankleY + footH), 5f, 5f, paint);
+                ankleX - footLen * 0.33f, ankleY - footH * 0.48f,
+                ankleX + footLen * 0.18f, ankleY + footH * 0.90f), 5f, 5f, paint);
         paint.setColor(gv.withAlpha(shoeColor, alpha));
         canvas.drawRoundRect(new RectF(
-                ankleX - pw * 0.08f, ankleY + footH * 0.4f,
-                ankleX + footLen * 0.72f, ankleY + footH), 4f, 4f, paint);
+                ankleX - footLen * 0.24f, ankleY + footH * 0.28f,
+                ankleX + footLen * 0.82f, ankleY + footH * 1.04f), 4f, 4f, paint);
         paint.setColor(gv.withAlpha(shoeHighlight, alpha));
         canvas.drawRoundRect(new RectF(
-                ankleX + footLen * 0.44f, ankleY - footH * 0.3f,
-                ankleX + footLen * 0.88f, ankleY + footH * 0.85f), 6f, 6f, paint);
+                ankleX + footLen * 0.42f, ankleY - footH * 0.18f,
+                ankleX + footLen * 0.92f, ankleY + footH * 0.86f), 6f, 6f, paint);
 
         canvas.restore();
     }

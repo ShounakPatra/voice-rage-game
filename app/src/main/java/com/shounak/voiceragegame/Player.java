@@ -14,6 +14,7 @@ public class Player {
     public boolean justLanded = false;
     public boolean touchingRoof = false;
     public float lastLandImpact = 0f;
+    public float gaitPhase = 0f;
 
     private final float groundY;
     private static final float GRAVITY = 1.65f;
@@ -22,6 +23,7 @@ public class Player {
     private static final long AIR_HANG_TIME_MS = 115;
     private static final float APEX_HANG_VELOCITY = 6.0f;
     private static final float AIR_HANG_GRAVITY_SCALE = 0.52f;
+    private static final float TWO_PI = (float) (Math.PI * 2.0);
 
     // ── Mode-based thresholds (set by settings) ──────────────────────
     public static int jumpAmpThreshold = 2500;
@@ -131,8 +133,20 @@ public class Player {
                 break;
         }
         speed += (targetSpeed - speed) * 0.22f;
+        updateGaitPhase();
 
         return jumped;
+    }
+
+    private void updateGaitPhase() {
+        if (!isOnGround) {
+            gaitPhase += Math.max(0.035f, Math.min(0.12f, speed * 0.0075f));
+        } else if (speed > 0.55f) {
+            gaitPhase += 0.038f + Math.min(speed, 18f) * 0.014f;
+        }
+        if (gaitPhase >= TWO_PI) {
+            gaitPhase %= TWO_PI;
+        }
     }
 
     public void jump(int amplitude, boolean rageMode) {
@@ -154,6 +168,7 @@ public class Player {
         justLanded = false;
         touchingRoof = false;
         lastLandImpact = 0f;
+        gaitPhase = 0f;
         speed = 0;
         isRaging = false;
         lastAmp = 0;
