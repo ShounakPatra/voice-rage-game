@@ -19,16 +19,14 @@
 
 <p align="center">
   <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
-    <img src="https://img.shields.io/badge/Download-Vocex_Run_v5.0_APK-111111?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=000000" height="55"/>
+    <img src="https://img.shields.io/badge/⬇%20Download-VocexRun%20v5.0%20APK-3DDC84?style=flat-square&logo=android&logoColor=white&labelColor=000000" height="48"/>
   </a>
 </p>
-
 <p align="center">
-  <img src="https://img.shields.io/badge/Free-No_Ads-3DDC84?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Min_SDK-Android_8.0+-3DDC84?style=flat-square&logo=android&logoColor=white"/>
-  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Downloads&color=555"/>
+  <img src="https://img.shields.io/badge/Free-No%20Ads-222222?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Min%20SDK-Android%208.0+-222222?style=flat-square&logo=android&logoColor=3DDC84"/>
+  <img src="https://img.shields.io/badge/Size-~12%20MB-222222?style=flat-square"/>
 </p>
-
 <p align="center">
   <sub>⚠️ Enable <b>"Install unknown apps"</b> before installing the APK.</sub>
 </p>
