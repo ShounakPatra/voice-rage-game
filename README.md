@@ -10,6 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/stars/ShounakPatra/vocex-run?style=social"/>
+  <img src="https://github.com/ShounakPatra/vocex-run/actions/workflows/android.yml/badge.svg"/>
   <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
