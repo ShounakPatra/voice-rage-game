@@ -7,7 +7,7 @@ public class SettingsManager {
     public int selectedMode = -1;
     public float sensitivityPct = 50f;
     public float hudOpacityPct = 100f;
-    public boolean shadowsEnabled = false;
+    public boolean shadowsEnabled = true;
     public int graphicsQualityIndex = 1;
     public int shadowPresetIndex = 1;
     public int shadowResolutionIndex = 2;
@@ -19,7 +19,7 @@ public class SettingsManager {
     public float exposurePct = 50f;
     public boolean highSunIntensity = false;
     public float masterAudioBoostPct = 50f;
-    public boolean dailyChallenge = false;
+    public boolean dailyChallenge = true;
     public boolean hapticsEnabled = true;
 
     private static final String PREFS_NAME = "VocexRunPrefs";
@@ -28,7 +28,7 @@ public class SettingsManager {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         sensitivityPct = clamp(prefs.getFloat("sensitivityPct", 50f), 0f, 100f);
         hudOpacityPct = clamp(prefs.getFloat("hudOpacityPct", 100f), 15f, 100f);
-        shadowsEnabled = prefs.getBoolean("shadowsEnabled", false);
+        shadowsEnabled = prefs.getBoolean("shadowsEnabled", true);
         graphicsQualityIndex = clamp(prefs.getInt("graphicsQualityIndex", 1), 0, 3);
         shadowPresetIndex = clamp(prefs.getInt("shadowPresetIndex", 1), 0, 4);
         shadowResolutionIndex = clamp(prefs.getInt("shadowResolutionIndex", 2), 0, 4);
@@ -41,7 +41,7 @@ public class SettingsManager {
         highSunIntensity = prefs.getBoolean("highSunIntensity", false);
         masterAudioBoostPct = clamp(prefs.getFloat("masterAudioBoostPct", 50f), 0f, 100f);
         selectedMode = prefs.getInt("selectedMode", -1);
-        dailyChallenge = prefs.getBoolean("dailyChallenge", false);
+        dailyChallenge = prefs.getBoolean("dailyChallenge", true);
         hapticsEnabled = prefs.getBoolean("hapticsEnabled", true);
     }
 
@@ -79,8 +79,8 @@ public class SettingsManager {
                 Player.jumpDeltaThreshold = 300;
                 break;
             case 1:
-                Player.jumpAmpThreshold = 2500;
-                Player.jumpDeltaThreshold = 800;
+                Player.jumpAmpThreshold = 2900;
+                Player.jumpDeltaThreshold = 950;
                 break;
             case 2:
                 Player.jumpAmpThreshold = 6000;

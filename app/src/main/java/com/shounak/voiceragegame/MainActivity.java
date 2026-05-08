@@ -3,6 +3,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.GameManager;
 import android.app.GameState;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -20,10 +21,13 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int MIC_PERMISSION_CODE = 101;
     private GameView gameView;
+    private boolean showOpeningLoadingOnStart = true;
+    private boolean openingLoadingConsumed = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        showOpeningLoadingOnStart = shouldShowOpeningLoading(savedInstanceState);
 
         // Keep screen on while playing
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -56,10 +60,19 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("NewApi")
     private void startGame() {
-        gameView = new GameView(this);
+        boolean showOpeningLoading = showOpeningLoadingOnStart && !openingLoadingConsumed;
+        openingLoadingConsumed = true;
+        gameView = new GameView(this, showOpeningLoading);
         setContentView(gameView);
         hideSystemUI();
         notifyGameState(GameState.MODE_CONTENT, false);
+    }
+
+    private boolean shouldShowOpeningLoading(Bundle savedInstanceState) {
+        Intent intent = getIntent();
+        boolean fromRecents = intent != null
+                && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
+        return savedInstanceState == null && !fromRecents;
     }
 
     @SuppressLint("NewApi")

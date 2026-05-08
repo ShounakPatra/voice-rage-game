@@ -40,7 +40,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int selectedMode = -1;
     private float sensitivityPct = 50f;
     private float hudOpacityPct = 100f;
-    private boolean shadowsEnabled = false;
+    private boolean shadowsEnabled = true;
     private int graphicsQualityIndex = 1;
     private int shadowPresetIndex = 1;
     private int shadowResolutionIndex = 2;
@@ -52,7 +52,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private float exposurePct = 50f;
     private boolean highSunIntensity = false;
     private float masterAudioBoostPct = 50f;
-    private boolean dailyChallenge = false;
+    private boolean dailyChallenge = true;
     private boolean hapticsEnabled = true;
 
     public final ParticleSystem ps = new ParticleSystem();
@@ -99,7 +99,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private String runEventBannerTitle = "";
     private String runEventBannerSubtitle = "";
     private boolean skyRaidAnnounced = false;
-    private boolean openingLoadingScreen = true;
+    private final boolean showOpeningLoadingOnFirstSurface;
+    private boolean openingLoadingConsumed = false;
+    private boolean openingLoadingScreen = false;
     private long openingLoadingStartTime = 0L;
     private int flyingWaveBandStart = -1;
     private int flyingWaveCursor = 0;
@@ -184,6 +186,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private static final long CALIBRATION_DURATION_MS = 3000;
     private static final long CALIBRATION_WARMUP_MS = 350;
     private static final int CELESTIAL_CYCLE_SCORE = 300;
+    private static final int CELESTIAL_START_SCORE_OFFSET = CELESTIAL_CYCLE_SCORE / 2;
     private static final int FLYING_WAVE_UNLOCK_SCORE = 300;
     private static final int FLYING_WAVE_SCORE_BAND = 100;
     private static final int FLYING_WAVES_PER_SCORE_BAND = 3;
@@ -203,7 +206,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int soundCatLaugh = -1;
 
     public GameView(Context context) {
+        this(context, true);
+    }
+
+    public GameView(Context context, boolean showOpeningLoadingOnFirstSurface) {
         super(context);
+        this.showOpeningLoadingOnFirstSurface = showOpeningLoadingOnFirstSurface;
         getHolder().addCallback(this);
         audioEngine = new AudioEngine();
         setKeepScreenOn(true);
@@ -345,7 +353,13 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         applySlider();
         applyRenderingSettings();
         syncAudioCalibration();
-        startOpeningLoadingScreen();
+        if (showOpeningLoadingOnFirstSurface && !openingLoadingConsumed) {
+            openingLoadingConsumed = true;
+            startOpeningLoadingScreen();
+        } else {
+            openingLoadingScreen = false;
+            openingLoadingStartTime = 0L;
+        }
 
         resume();
     }
@@ -361,7 +375,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     boolean shouldUseHardwareCanvas() {
-        return hardwareCanvasEnabled;
+        return false;
     }
 
     private void updateRenderingTier() {
@@ -380,13 +394,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             case 2:
             case 3:
                 premiumRendering = canUsePremium;
-                hardwareCanvasEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && canUsePremium;
+                hardwareCanvasEnabled = false;
                 break;
             case 1:
             default:
                 premiumRendering = !lowPerformanceMode && normalSurface;
-                hardwareCanvasEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                        && !lowPerformanceMode && normalSurface;
+                hardwareCanvasEnabled = false;
                 break;
         }
     }
@@ -677,14 +690,16 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         int runScoreNow = score / 10;
         if (!skyRaidAnnounced && runScoreNow >= 300) {
             skyRaidAnnounced = true;
-            showRunEventBanner("SKY RAID UNLOCKED", "Flying enemies can now attack in waves", 2600L);
+            showRunEventBanner("SKY RAID UNLOCKED", "Head-high raiders now appear solo", 2600L);
         }
         boolean jumped = player.update(level, amp, selectedMode, instantJumpPulse);
         if (jumped) {
+            kickCamera(selectedMode == 2 ? 4.8f : 3.2f);
             vibrate(30);
         }
         if (player.justLanded) {
             ps.spawnLandingDust(player, groundY, player.lastLandImpact, premiumRendering);
+            kickCamera(1.8f + player.lastLandImpact * 5.2f);
         }
         if (level == AudioEngine.VoiceLevel.RAGE && now - lastSparkTime > 46L) {
             ps.spawnRageSparks(player, premiumRendering);
@@ -713,7 +728,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                 if (consumeScheduledFlyingWave(runScore)) {
                     spawnFlyingEnemyWave(runScore, scrollSpeed);
-                    showRunEventBanner("SKY RAID INBOUND", "Triple flyer formation entering", 1450L);
+                    showRunEventBanner("RAIDER INBOUND", "Single flyer crossing head height", 1450L);
                 } else if (type == 0) {
                     int h = (int) (55 * heightScale);
                     obstacles.add(new Obstacle(screenWidth, groundY - h, 90, h));
@@ -744,12 +759,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
                 if (!obs.passed && obs.x + obs.width < player.x) {
                     obs.passed = true;
+                    kickCamera(obs.isFlyingEnemy() ? 2.4f : 1.2f);
                     playSound(soundWow);
                 }
 
                 if (RectF.intersects(player.getBounds(), obs.getBounds())) {
                     gameOver = true;
                     gamePaused = false;
+                    kickCamera(10.5f);
                     int currentScore = score / 10;
                     finalScore = currentScore;
                     failMessage = FAIL_MESSAGES[random.nextInt(FAIL_MESSAGES.length)];
@@ -775,6 +792,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 }
             }
         }
+    }
+
+    private void kickCamera(float strength) {
+        float clamped = Math.max(0.5f, Math.min(12f, strength));
+        shakeX += (random.nextFloat() - 0.5f) * clamped;
+        shakeY += (random.nextFloat() - 0.5f) * clamped * 0.72f;
     }
 
     private boolean shouldSpawnFlyingEnemyWave(int runScore) {
@@ -825,12 +848,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private void spawnFlyingEnemyWave(int runScore, float scrollSpeed) {
         int w = premiumRendering ? 112 : 96;
         int h = premiumRendering ? 72 : 62;
-        int count = runScore >= FLYING_WAVE_UNLOCK_SCORE ? 3 : 1;
+        int count = 1;
 
         float gap = screenWidth * 0.26f + scrollSpeed * 11f + obstacleRandom.nextInt(70);
         for (int i = 0; i < count; i++) {
-            float lane = groundY - 210f - obstacleRandom.nextInt(126);
-            lane = Math.max(64f, Math.min(groundY - h - 54f, lane));
+            float headLane = player != null
+                    ? player.y - h - 4f - obstacleRandom.nextInt(24)
+                    : groundY - 90f - h - 8f - obstacleRandom.nextInt(24);
+            float lane = Math.max(54f, Math.min(groundY - h - 48f, headLane));
             float x = screenWidth + 20f + i * gap;
             obstacles.add(new Obstacle(x, lane, w, h,
                     Obstacle.TYPE_FLYING_ENEMY, obstacleRandom.nextFloat() * TWO_PI));
@@ -2007,7 +2032,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     private float getDaylightAmount() {
-        int runScore = Math.max(0, score / 10);
+        int runScore = Math.max(0, score / 10) + CELESTIAL_START_SCORE_OFFSET;
         int cycleScore = CELESTIAL_CYCLE_SCORE * 2;
         int phaseScore = runScore % cycleScore;
         float raw = phaseScore <= CELESTIAL_CYCLE_SCORE
@@ -2024,7 +2049,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
     private void drawCelestialCycle(Canvas canvas, float daylight, long now) {
         worldRenderer.drawCelestialCycle(canvas, paint, auxPaint, screenWidth,
-                groundY, score, now, premiumRendering, highSunIntensity, CELESTIAL_CYCLE_SCORE);
+                groundY, score + CELESTIAL_START_SCORE_OFFSET * 10,
+                now, premiumRendering, highSunIntensity, CELESTIAL_CYCLE_SCORE);
     }
 
     public void drawPremiumButtonSurface(Canvas canvas, RectF rect, int startColor, int endColor,
@@ -2695,7 +2721,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             case 1:
             default:
-                shadowsEnabled = false;
+                shadowsEnabled = true;
                 shadowPresetIndex = 1;
                 applyShadowPresetDefaults(1);
                 msaaIndex = 1;
@@ -2786,8 +2812,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             baseline = 0;
         }
 
-        float modeScale = selectedMode == 0 ? 0.46f : selectedMode == 1 ? 0.54f : 0.64f;
-        int noiseGuard = baseline + (selectedMode == 0 ? 160 : selectedMode == 1 ? 260 : 430);
+        float modeScale = selectedMode == 0 ? 0.46f : selectedMode == 1 ? 0.60f : 0.64f;
+        int noiseGuard = baseline + (selectedMode == 0 ? 160 : selectedMode == 1 ? 320 : 430);
         int calibratedAmp = clamp(Math.max(noiseGuard, (int) (peak * modeScale)),
                 (int) (baseAmp * 0.35f), (int) (baseAmp * 1.45f));
         int voiceRange = Math.max(peak - baseline, calibratedAmp);
@@ -3645,7 +3671,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 masterAudioBoostPct = 50f;
                 break;
             case SETTINGS_TAB_GAMEPLAY:
-                dailyChallenge = false;
+                dailyChallenge = true;
                 hapticsEnabled = true;
                 break;
         }
@@ -3662,7 +3688,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         exposurePct = 50f;
         highSunIntensity = false;
         masterAudioBoostPct = 50f;
-        dailyChallenge = false;
+        dailyChallenge = true;
         hapticsEnabled = true;
         activeDropdown = DROPDOWN_NONE;
         draggingSlider = false;

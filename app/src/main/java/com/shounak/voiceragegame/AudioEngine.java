@@ -203,7 +203,7 @@ public class AudioEngine {
 
     public synchronized void configureVoiceProfile(int effectiveJumpThreshold, int selectedMode) {
         int jump = clamp(effectiveJumpThreshold, 260, 14000);
-        float profileScale = selectedMode == 0 ? 0.74f : selectedMode == 1 ? 0.9f : 1.08f;
+        float profileScale = selectedMode == 0 ? 0.74f : selectedMode == 1 ? 1.0f : 1.08f;
         int tuned = clamp((int) (jump * profileScale), 220, 15000);
         instantJumpThreshold = clamp((int) (jump * 0.92f), 180, 15000);
         instantJumpDeltaThreshold = clamp((int) (jump * (selectedMode == 2 ? 0.24f : 0.18f)), 80, 3600);
