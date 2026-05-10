@@ -48,6 +48,12 @@ public class Player {
     }
 
     public boolean update(AudioEngine.VoiceLevel level, int amplitude, int selectedMode, boolean jumpRequested) {
+        return update(level, amplitude, selectedMode, jumpRequested, 1f);
+    }
+
+    public boolean update(AudioEngine.VoiceLevel level, int amplitude, int selectedMode,
+                          boolean jumpRequested, float frameScale) {
+        float dt = Math.max(0.25f, Math.min(4f, frameScale));
         long now = SystemClock.uptimeMillis();
         boolean wasOnGround = isOnGround;
         justLanded = false;
@@ -58,9 +64,19 @@ public class Player {
         int effectiveThreshold = (int) (jumpAmpThreshold * sensitivityMultiplier);
         int effectiveDelta = (int) (jumpDeltaThreshold * sensitivityMultiplier);
 
-        boolean voiceOnset = amplitude > effectiveThreshold
-                && delta > effectiveDelta;
-        boolean jumped = ((jumpRequested && amplitude > effectiveThreshold * 0.72f) || voiceOnset)
+        boolean voiceOnset;
+        if (selectedMode == 1) {
+            // Normal mode: relative onset — fires when sound spikes louder than before
+            // 300 = small noise floor to filter mic hiss / ambient silence fluctuations
+            voiceOnset = amplitude > 300 && delta > effectiveDelta;
+        } else {
+            // Silent / Rage mode: absolute threshold still required
+            voiceOnset = amplitude > effectiveThreshold && delta > effectiveDelta;
+        }
+
+        boolean jumped = ((jumpRequested && amplitude > (selectedMode == 1
+                ? 300
+                : effectiveThreshold * 0.72f)) || voiceOnset)
                 && isOnGround
                 && now - lastJumpTime > JUMP_COOLDOWN_MS;
 
@@ -77,11 +93,11 @@ public class Player {
         if (!isOnGround && (airborneMs < AIR_HANG_TIME_MS || Math.abs(velY) < APEX_HANG_VELOCITY)) {
             gravity *= AIR_HANG_GRAVITY_SCALE;
         }
-        velY += gravity;
+        velY += gravity * dt;
         if (velY > MAX_FALL_SPEED) {
             velY = MAX_FALL_SPEED;
         }
-        y += velY;
+        y += velY * dt;
 
         // Ground clamp
         if (y >= groundY - height) {
@@ -132,17 +148,18 @@ public class Player {
                 isRaging = false;
                 break;
         }
-        speed += (targetSpeed - speed) * 0.22f;
-        updateGaitPhase();
+        float response = 1f - (float) Math.pow(1f - 0.22f, dt);
+        speed += (targetSpeed - speed) * response;
+        updateGaitPhase(dt);
 
         return jumped;
     }
 
-    private void updateGaitPhase() {
+    private void updateGaitPhase(float frameScale) {
         if (!isOnGround) {
-            gaitPhase += Math.max(0.035f, Math.min(0.12f, speed * 0.0075f));
+            gaitPhase += Math.max(0.035f, Math.min(0.12f, speed * 0.0075f)) * frameScale;
         } else if (speed > 0.55f) {
-            gaitPhase += 0.038f + Math.min(speed, 18f) * 0.014f;
+            gaitPhase += (0.038f + Math.min(speed, 18f) * 0.014f) * frameScale;
         }
         if (gaitPhase >= TWO_PI) {
             gaitPhase %= TWO_PI;

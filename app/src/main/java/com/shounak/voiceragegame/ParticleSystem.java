@@ -13,19 +13,24 @@ public class ParticleSystem {
     private final Random random = new Random();
 
     public void update(boolean premiumRendering) {
+        update(premiumRendering, 1f);
+    }
+
+    public void update(boolean premiumRendering, float frameScale) {
+        float dt = Math.max(0.25f, Math.min(4f, frameScale));
         Iterator<Particle> it = particles.iterator();
         while (it.hasNext()) {
             Particle p = it.next();
-            p.life--;
+            p.life -= Math.max(1, Math.round(dt));
             if (p.life <= 0) {
                 it.remove();
                 continue;
             }
-            p.x += p.vx;
-            p.y += p.vy;
-            p.vx *= p.spark ? 0.96f : 0.92f;
-            p.vy += p.spark ? 0.04f : 0.12f;
-            p.size *= p.spark ? 0.97f : 0.985f;
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.vx *= (float) Math.pow(p.spark ? 0.96f : 0.92f, dt);
+            p.vy += (p.spark ? 0.04f : 0.12f) * dt;
+            p.size *= (float) Math.pow(p.spark ? 0.97f : 0.985f, dt);
         }
         int maxParticles = premiumRendering ? 120 : 64;
         while (particles.size() > maxParticles) {

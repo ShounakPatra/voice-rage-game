@@ -8,6 +8,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
@@ -43,9 +44,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private boolean shadowsEnabled = true;
     private int graphicsQualityIndex = 1;
     private int shadowPresetIndex = 1;
-    private int shadowResolutionIndex = 2;
-    private int shadowCascadesIndex = 1;
-    private boolean softShadows = true;
+    private int shadowResolutionIndex = 1;
+    private int shadowCascadesIndex = 0;
+    private boolean softShadows = false;
     private int msaaIndex = 1;
     private float saturationPct = 50f;
     private float contrastPct = 50f;
@@ -94,7 +95,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     };
     private boolean hadAudioFocus = false;
     private boolean premiumRendering = true;
-    private boolean hardwareCanvasEnabled = false;
+    private volatile boolean hardwareCanvasEnabled = false;
     private long runEventBannerUntil = 0;
     private String runEventBannerTitle = "";
     private String runEventBannerSubtitle = "";
@@ -174,6 +175,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private int screenWidth, screenHeight, groundY;
 
     private int score = 0;
+    private float scoreProgress = 0f;
     private int highScore = 0;
     private boolean gameOver = false;
     private boolean gameStarted = false;
@@ -213,6 +215,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         super(context);
         this.showOpeningLoadingOnFirstSurface = showOpeningLoadingOnFirstSurface;
         getHolder().addCallback(this);
+        getHolder().setFormat(PixelFormat.RGBA_8888);
         audioEngine = new AudioEngine();
         setKeepScreenOn(true);
 
@@ -252,7 +255,14 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
     }
 
+    public void cancelOpeningLoadingScreen() {
+        openingLoadingScreen = false;
+        openingLoadingStartTime = 0L;
+        openingLoadingConsumed = true;
+    }
+
     public void resume() {
+        setKeepScreenOn(true);
         if (soundPool == null) {
             AudioAttributes attrs = new AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_GAME)
@@ -326,13 +336,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceCreated(@androidx.annotation.NonNull SurfaceHolder holder) {
         configureSurfaceSize(getWidth(), getHeight());
 
-        android.content.SharedPreferences prefs = getContext()
-                .getSharedPreferences("VocexRunPrefs", android.content.Context.MODE_PRIVATE);
         sm.load(getContext());
         syncLocalSettingsFromManager();
-        highScore = prefs.getInt("highScore", 0);
-        finalScore = prefs.getInt("lastScore", 0);
-        dailyBestScore = prefs.getInt(getDailyBestKey(), 0);
+        dailyBestScore = getContext().getSharedPreferences("VocexRunPrefs", Context.MODE_PRIVATE)
+                .getInt(getDailyBestKey(), 0);
         initializeVibrator();
         audioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest == null) {
@@ -346,6 +353,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     .build();
         }
 
+        android.content.SharedPreferences prefs = getContext().getSharedPreferences("VocexRunPrefs", Context.MODE_PRIVATE);
         if (!prefs.getBoolean("hasLaunched", false)) {
             showingFirstTimePrompt = true;
         }
@@ -375,7 +383,11 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     boolean shouldUseHardwareCanvas() {
-        return false;
+        return hardwareCanvasEnabled;
+    }
+
+    void onHardwareCanvasFailed() {
+        hardwareCanvasEnabled = false;
     }
 
     private void updateRenderingTier() {
@@ -389,17 +401,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         switch (graphicsQualityIndex) {
             case 0:
                 premiumRendering = false;
-                hardwareCanvasEnabled = false;
+                hardwareCanvasEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && normalSurface;
                 break;
             case 2:
             case 3:
                 premiumRendering = canUsePremium;
-                hardwareCanvasEnabled = false;
+                hardwareCanvasEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && normalSurface;
                 break;
             case 1:
             default:
-                premiumRendering = !lowPerformanceMode && normalSurface;
-                hardwareCanvasEnabled = false;
+                premiumRendering = false;
+                hardwareCanvasEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && normalSurface;
                 break;
         }
     }
@@ -654,6 +666,18 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public void update() {
+        update(1f);
+    }
+
+    public void update(float frameScale) {
+        float dt = Math.max(0.25f, Math.min(4f, frameScale));
+
+        float shakeDamping = (float) Math.pow(0.85f, dt);
+        shakeX *= shakeDamping;
+        shakeY *= shakeDamping;
+        if (Math.abs(shakeX) < 0.01f) shakeX = 0f;
+        if (Math.abs(shakeY) < 0.01f) shakeY = 0f;
+
         if (gameOver || player == null) return;
 
         int amp = audioEngine.getAmplitude();
@@ -682,17 +706,17 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             }
             return;
         }
-
         if (!gameStarted || gamePaused) return;
 
         long now = System.currentTimeMillis();
-        score++;
+        scoreProgress += dt;
+        score = (int) scoreProgress;
         int runScoreNow = score / 10;
         if (!skyRaidAnnounced && runScoreNow >= 300) {
             skyRaidAnnounced = true;
             showRunEventBanner("SKY RAID UNLOCKED", "Head-high raiders now appear solo", 2600L);
         }
-        boolean jumped = player.update(level, amp, selectedMode, instantJumpPulse);
+        boolean jumped = player.update(level, amp, selectedMode, instantJumpPulse, dt);
         if (jumped) {
             kickCamera(selectedMode == 2 ? 4.8f : 3.2f);
             vibrate(30);
@@ -705,15 +729,12 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             ps.spawnRageSparks(player, premiumRendering);
             lastSparkTime = now;
         }
-        ps.update(premiumRendering);
+        ps.update(premiumRendering, dt);
         if (level == AudioEngine.VoiceLevel.RAGE
                 && now - lastRageHapticTime > 500) {
             vibrate(40);
             lastRageHapticTime = now;
         }
-        shakeX *= 0.85f;
-        shakeY *= 0.85f;
-
         int milestone = (score / 10) / 100;
         float warmup = Math.min(score / 900f, 1f);
         float scrollSpeed = 6 + (warmup * 2f) + (milestone * 3.5f) + ((score % 2000) / 400f);
@@ -748,7 +769,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             while (it.hasNext()) {
                 Obstacle obs = it.next();
                 float obstacleSpeed = obs.isFlyingEnemy() ? scrollSpeed * 1.18f : scrollSpeed;
-                obs.x -= obstacleSpeed;
+                float previousRight = obs.x + obs.width;
+                obs.x -= obstacleSpeed * dt;
                 if (obs.isFlyingEnemy()) {
                     obs.y = obs.baseY + (float) Math.sin(now * 0.008f + obs.phaseSeed) * 11f;
                 }
@@ -763,7 +785,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     playSound(soundWow);
                 }
 
-                if (RectF.intersects(player.getBounds(), obs.getBounds())) {
+                if (RectF.intersects(player.getBounds(), obs.getBounds())
+                        || sweptPastPlayer(previousRight, obs)) {
                     gameOver = true;
                     gamePaused = false;
                     kickCamera(10.5f);
@@ -771,20 +794,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     finalScore = currentScore;
                     failMessage = FAIL_MESSAGES[random.nextInt(FAIL_MESSAGES.length)];
 
-                    android.content.SharedPreferences prefs = getContext()
-                            .getSharedPreferences("VocexRunPrefs", android.content.Context.MODE_PRIVATE);
-                    android.content.SharedPreferences.Editor editor = prefs.edit();
-                    editor.putInt("lastScore", finalScore);
-
                     if (currentScore > highScore) {
                         highScore = currentScore;
-                        editor.putInt("highScore", highScore);
                     }
                     if (dailyChallenge && currentScore > dailyBestScore) {
                         dailyBestScore = currentScore;
-                        editor.putInt(getDailyBestKey(), dailyBestScore);
+                        getContext().getSharedPreferences("VocexRunPrefs", Context.MODE_PRIVATE)
+                                .edit().putInt(getDailyBestKey(), dailyBestScore).apply();
                     }
-                    editor.apply();
+                    saveSettings();
 
                     vibrate(70);
                     playSound(soundCatLaugh);
@@ -798,6 +816,19 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float clamped = Math.max(0.5f, Math.min(12f, strength));
         shakeX += (random.nextFloat() - 0.5f) * clamped;
         shakeY += (random.nextFloat() - 0.5f) * clamped * 0.72f;
+    }
+
+    private boolean sweptPastPlayer(float previousRight, Obstacle obs) {
+        if (player == null) {
+            return false;
+        }
+        float previousLeft = previousRight - obs.width;
+        RectF sweptBounds = new RectF(
+                Math.min(previousLeft, obs.x),
+                obs.y,
+                Math.max(previousRight, obs.x + obs.width),
+                obs.y + obs.height);
+        return RectF.intersects(player.getBounds(), sweptBounds);
     }
 
     private boolean shouldSpawnFlyingEnemyWave(int runScore) {
@@ -853,9 +884,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         float gap = screenWidth * 0.26f + scrollSpeed * 11f + obstacleRandom.nextInt(70);
         for (int i = 0; i < count; i++) {
             float headLane = player != null
-                    ? player.y - h - 4f - obstacleRandom.nextInt(24)
-                    : groundY - 90f - h - 8f - obstacleRandom.nextInt(24);
-            float lane = Math.max(54f, Math.min(groundY - h - 48f, headLane));
+                    ? player.y + player.height * 0.25f - h + obstacleRandom.nextInt(35)
+                    : groundY - 55f - h + obstacleRandom.nextInt(35);
+            float lane = Math.max(groundY * 0.42f, Math.min(groundY - h - 32f, headLane));
             float x = screenWidth + 20f + i * gap;
             obstacles.add(new Obstacle(x, lane, w, h,
                     Obstacle.TYPE_FLYING_ENEMY, obstacleRandom.nextFloat() * TWO_PI));
@@ -868,6 +899,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         if (canvas == null || player == null) {
             return;
         }
+        canvas.drawColor(Color.rgb(4, 5, 17));
         syncSettingsManagerFromLocal();
 
         AudioEngine.VoiceLevel level = audioEngine.getVoiceLevel();
@@ -882,7 +914,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
 
 
         canvas.save();
-        canvas.translate(shakeX, shakeY);
+        canvas.translate(Math.round(shakeX), Math.round(shakeY));
 
         // FIX: Sky elements always draw — RAGE mode dims them, not hides them
         // Previously `if (level != RAGE)` caused stars/moon/clouds to vanish mid-jump
@@ -892,18 +924,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
             // ── STARS ─────────────────────────────────────────────────────
             float nightAlpha = (1f - daylight) * rageDim;
             float backPressDim = 1f;
-            if (backPressedOnce) {
-                long elapsed = now2 - backPressTime;
-                if (elapsed < BACK_PRESS_INTERVAL) {
-                    // Ease-in-out dim: quickly fade to 0.25, then slowly recover
-                    float t = elapsed / (float) BACK_PRESS_INTERVAL;
-                    backPressDim = t < 0.15f
-                            ? 1f - (t / 0.15f) * 0.75f   // fade down
-                            : 0.25f + (t - 0.15f) / 0.85f * 0.75f; // fade back up
-                } else {
-                    backPressedOnce = false; // expired
-                }
-            }
 
             // Layer 1: tiny distant stars, very slow parallax
             int farStarCount = premiumRendering ? 55 : 30;
@@ -1001,90 +1021,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     continue;
                 }
 
-                // Ground shadow
-                if (shouldDrawSceneShadows()) {
-                    float blur = getSoftShadowExtra();
-                    paint.setColor(Color.argb(shadowAlpha(55), 0, 0, 0));
-                    canvas.drawOval(new RectF(cx - cw * 0.3f - blur, groundY - 6 - blur * 0.18f,
-                            cx + cw * 1.3f + blur, groundY + 6 + blur * 0.18f), paint);
-                }
-
-                // Trunk base (rounded bottom)
-                float tL = cx + cw * 0.28f, tR = cx + cw * 0.72f;
-
-                // Shadow side (right)
-                paint.setColor(Color.rgb(22, 90, 22));
-                canvas.drawRoundRect(new RectF(tL, cy, tR, cy + ch), 10, 10, paint);
-
-                // Lit side (left)
-                paint.setColor(Color.rgb(42, 148, 42));
-                canvas.drawRoundRect(new RectF(tL, cy, tL + (tR - tL) * 0.58f, cy + ch), 10, 10, paint);
-
-                // Highlight strip
-                paint.setColor(Color.argb(70, 160, 255, 120));
-                canvas.drawRoundRect(new RectF(tL + 4, cy + ch * 0.05f,
-                        tL + 9, cy + ch * 0.88f), 4, 4, paint);
-
-                // Ribs (horizontal texture bands)
-                paint.setColor(Color.argb(45, 0, 60, 0));
-                int ribCount = Math.max(3, (int) (ch / 22));
-                for (int r = 1; r < ribCount; r++) {
-                    float ry = cy + ch * r / (float) ribCount;
-                    canvas.drawLine(tL + 2, ry, tR - 2, ry, paint);
-                }
-
-                // Left arm
-                if (ch > 60) {
-                    float aY = cy + ch * 0.35f;
-                    float aW = cw * 0.45f;
-                    float aH = cw * 0.30f;
-                    // Arm shadow side
-                    paint.setColor(Color.rgb(22, 90, 22));
-                    canvas.drawRoundRect(new RectF(cx, aY - ch * 0.18f, tL + 4, aY + aH), 7, 7, paint);
-                    // Arm lit side
-                    paint.setColor(Color.rgb(42, 148, 42));
-                    canvas.drawRoundRect(new RectF(cx, aY - ch * 0.18f, tL + 4, aY + aH * 0.55f), 7, 7, paint);
-                    // Arm vertical upward bit
-                    paint.setColor(Color.rgb(38, 138, 38));
-                    canvas.drawRoundRect(new RectF(cx + 2, aY - ch * 0.38f, cx + aW * 0.6f, aY + aH * 0.1f), 7, 7, paint);
-                    // Arm highlight
-                    paint.setColor(Color.argb(60, 160, 255, 120));
-                    canvas.drawLine(cx + 4, aY - ch * 0.35f, cx + 4, aY + aH * 0.08f, paint);
-                }
-
-                // Right arm
-                if (ch > 80) {
-                    float aY = cy + ch * 0.50f;
-                    float aH = cw * 0.30f;
-                    paint.setColor(Color.rgb(22, 90, 22));
-                    canvas.drawRoundRect(new RectF(tR - 4, aY - ch * 0.14f, cx + cw, aY + aH), 7, 7, paint);
-                    paint.setColor(Color.rgb(42, 148, 42));
-                    canvas.drawRoundRect(new RectF(tR - 4, aY - ch * 0.14f, cx + cw, aY + aH * 0.55f), 7, 7, paint);
-                    paint.setColor(Color.rgb(38, 138, 38));
-                    canvas.drawRoundRect(new RectF(tR - cw * 0.55f, aY - ch * 0.30f, cx + cw - 2, aY + aH * 0.1f), 7, 7, paint);
-                }
-
-                // Spines (small white lines radiating from edges)
-                paint.setColor(Color.argb(180, 230, 240, 210));
-                paint.setStrokeWidth(1.8f);
-                paint.setStyle(Paint.Style.STROKE);
-                int spineCount = Math.max(4, (int) (ch / 18));
-                for (int s = 0; s < spineCount; s++) {
-                    float sy2 = cy + ch * (s + 0.5f) / spineCount;
-                    // Left spines
-                    canvas.drawLine(tL + 2, sy2, tL - 9, sy2 - 5, paint);
-                    canvas.drawLine(tL + 2, sy2, tL - 9, sy2 + 5, paint);
-                    // Right spines
-                    canvas.drawLine(tR - 2, sy2, tR + 9, sy2 - 5, paint);
-                    canvas.drawLine(tR - 2, sy2, tR + 9, sy2 + 5, paint);
-                }
-                // Spines on arms
-                if (ch > 60) {
-                    float aY = cy + ch * 0.35f - ch * 0.07f;
-                    canvas.drawLine(cx + cw * 0.15f, aY - 3, cx + cw * 0.04f, aY - 9, paint);
-                    canvas.drawLine(cx + cw * 0.15f, aY + 3, cx + cw * 0.04f, aY + 9, paint);
-                }
-                paint.setStyle(Paint.Style.FILL);
+                drawRealisticCactus(canvas, obs);
                 drawCactus3D(canvas, obs);
             }
         }
@@ -1194,9 +1131,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         paint.setColor(Color.rgb(80, 45, 10));
         paint.setStrokeWidth(3.5f);
         paint.setStyle(Paint.Style.STROKE);
-        float browY = py + ph * 0.19f + (player.isRaging ? -3 : 0);
-        canvas.drawLine(px + pw * 0.22f, browY, px + pw * 0.42f, browY - (player.isRaging ? 5 : 1), paint);
-        canvas.drawLine(px + pw * 0.58f, browY - (player.isRaging ? 5 : 1), px + pw * 0.78f, browY, paint);
+        boolean showRage = !onGround && player.isRaging;
+        float browY = py + ph * 0.19f + (showRage ? -3 : 0);
+        canvas.drawLine(px + pw * 0.22f, browY, px + pw * 0.42f, browY - (showRage ? 5 : 1), paint);
+        canvas.drawLine(px + pw * 0.58f, browY - (showRage ? 5 : 1), px + pw * 0.78f, browY, paint);
         paint.setStyle(Paint.Style.FILL);
 
         // Eye whites
@@ -1216,10 +1154,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         // Mouth / expression
         paint.setStrokeWidth(2.8f);
         paint.setStyle(Paint.Style.STROKE);
-        if (player.isRaging) {
+        if (!onGround && player.isRaging) {
             paint.setColor(Color.rgb(200, 40, 40));
             canvas.drawLine(px + pw * 0.34f, py + ph * 0.32f, px + pw * 0.66f, py + ph * 0.32f, paint);
-        } else if (level == AudioEngine.VoiceLevel.SHOUT) {
+        } else if (!onGround) {
             paint.setColor(Color.rgb(180, 80, 80));
             canvas.drawOval(new RectF(px + pw * 0.37f, py + ph * 0.27f,
                     px + pw * 0.63f, py + ph * 0.35f), paint);
@@ -1503,55 +1441,6 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                     screenHeight / 2f + (dailyChallenge ? 242 : 204), paint);
             paint.setTextAlign(Paint.Align.LEFT);
         }
-
-        // ── BACK-PRESS TOAST OVERLAY ──────────────────────────────────────
-        if (backPressedOnce) {
-            long elapsed = System.currentTimeMillis() - backPressTime;
-            if (elapsed < BACK_PRESS_INTERVAL) {
-                // Animate: fade in quickly, hold, fade out
-                float t = elapsed / (float) BACK_PRESS_INTERVAL;
-                float toastAlpha;
-                if (t < 0.1f) {
-                    toastAlpha = t / 0.1f; // fade in
-                } else if (t > 0.8f) {
-                    toastAlpha = (1f - t) / 0.2f; // fade out
-                } else {
-                    toastAlpha = 1f; // hold
-                }
-                // Slide-up entrance
-                float slideOffset = t < 0.12f ? (1f - t / 0.12f) * 40f : 0f;
-
-                float toastCx = screenWidth / 2f;
-                float toastCy = screenHeight - 120f + slideOffset;
-                String toastText = "Press the back button again";
-                paint.setTextSize(30);
-                float textW = paint.measureText(toastText);
-                float padH = 40f, padV = 22f;
-
-                // Pill background with glassmorphism
-                int bgAlpha = (int) (toastAlpha * 180);
-                paint.setColor(Color.argb(bgAlpha, 15, 12, 35));
-                RectF pill = new RectF(toastCx - textW / 2f - padH,
-                        toastCy - padV, toastCx + textW / 2f + padH,
-                        toastCy + padV + 6f);
-                canvas.drawRoundRect(pill, 32, 32, paint);
-
-                // Border glow
-                paint.setStyle(Paint.Style.STROKE);
-                paint.setStrokeWidth(2f);
-                paint.setColor(Color.argb((int) (toastAlpha * 120), 255, 100, 40));
-                canvas.drawRoundRect(pill, 32, 32, paint);
-                paint.setStyle(Paint.Style.FILL);
-
-                // Text
-                paint.setColor(Color.argb((int) (toastAlpha * 255), 255, 220, 180));
-                paint.setTextAlign(Paint.Align.CENTER);
-                canvas.drawText(toastText, toastCx, toastCy + 10f, paint);
-                paint.setTextAlign(Paint.Align.LEFT);
-            } else {
-                backPressedOnce = false;
-            }
-        }
     }
 
     @Override
@@ -1795,7 +1684,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
     private void drawHomeScreen(Canvas canvas, long now) {
         paint.setShader(null);
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.argb(232, 4, 5, 17));
+        paint.setColor(Color.argb(255, 4, 5, 17));
         canvas.drawRect(0, 0, screenWidth, screenHeight, paint);
         drawHomeCinematicBackdrop(canvas, now);
 
@@ -2738,9 +2627,9 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 softShadows = false;
                 break;
             case 1:
-                shadowResolutionIndex = 2;
-                shadowCascadesIndex = 1;
-                softShadows = true;
+                shadowResolutionIndex = 1;
+                shadowCascadesIndex = 0;
+                softShadows = false;
                 break;
             case 2:
                 shadowResolutionIndex = 3;
@@ -2778,6 +2667,7 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         ps.clear();
         score = 0;
+        scoreProgress = 0f;
         gameOver = false;
         gamePaused = false;
         gameStarted = false;
@@ -2792,6 +2682,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         lastObstacleTime = 0;
         lastRageHapticTime = 0;
         audioEngine.resetSmoothing();
+        shakeX = 0f;
+        shakeY = 0f;
         if (player != null) {
             player.reset(groundY);
         }
@@ -3749,6 +3641,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         masterAudioBoostPct = sm.masterAudioBoostPct;
         dailyChallenge = sm.dailyChallenge;
         hapticsEnabled = sm.hapticsEnabled;
+        highScore = sm.highScore;
+        finalScore = sm.lastScore;
     }
 
     private void syncSettingsManagerFromLocal() {
@@ -3769,6 +3663,8 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         sm.masterAudioBoostPct = masterAudioBoostPct;
         sm.dailyChallenge = dailyChallenge;
         sm.hapticsEnabled = hapticsEnabled;
+        sm.highScore = highScore;
+        sm.lastScore = finalScore;
     }
 
     private void restart() {
@@ -3777,12 +3673,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         }
         ps.clear();
         score = 0;
+        scoreProgress = 0f;
         gameOver = false;
         gamePaused = false;
         gameStarted = false;
         calibrating = false;
         skyRaidAnnounced = false;
         runEventBannerUntil = 0;
+        shakeX = 0f;
+        shakeY = 0f;
         if (player != null) player.reset(groundY);
         lastObstacleTime = 0;
         if (soundPool != null) soundPool.autoPause();
@@ -4070,7 +3969,250 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         path.close();
         canvas.drawPath(path, p);
     }
+    private void drawRealisticCactus(Canvas canvas, Obstacle obs) {
+        float cx = obs.x, cy = obs.y, cw = obs.width, ch = obs.height;
 
+        // ── Realistic cactus palette (saguaro-inspired) ───────────────────
+        int colDeep    = Color.rgb(14,  68,  22);   // deep shadow groove
+        int colShadow  = Color.rgb(22,  95,  30);   // shadow side
+        int colMid     = Color.rgb(38, 122,  44);   // mid-tone body
+        int colLit     = Color.rgb(60, 148,  52);   // lit face
+        int colBright  = Color.rgb(84, 172,  64);   // bright front edge
+        int colSpine   = Color.argb(215, 238, 244, 208); // off-white spines
+        int colTip     = Color.argb(255, 246, 240, 185); // yellowish spine tips
+        int colBloom   = Color.argb(90, 220, 255, 160);  // surface sheen
+
+        // Trunk column bounds — very slight taper (wider at base)
+        float taper = cw * 0.038f;
+        float tL  = cx + cw * 0.29f;
+        float tR  = cx + cw * 0.71f;
+        float tW  = tR - tL;
+        float tCx = (tL + tR) / 2f;
+
+        // ── GROUND SHADOW ─────────────────────────────────────────────────
+        if (shouldDrawSceneShadows()) {
+            float blur = getSoftShadowExtra();
+            paint.setColor(Color.argb(shadowAlpha(62), 0, 0, 0));
+            canvas.drawOval(new RectF(
+                    cx - cw * 0.22f - blur, groundY - 5 - blur * 0.15f,
+                    cx + cw * 1.22f + blur, groundY + 8 + blur * 0.15f), paint);
+        }
+
+        // ── TRUNK — 4-layer lighting ──────────────────────────────────────
+        // Layer 1: full shadow base
+        paint.setColor(colShadow);
+        canvas.drawRoundRect(new RectF(tL, cy, tR + taper, cy + ch), 11, 11, paint);
+
+        // Layer 2: mid-tone covers left 75%
+        paint.setColor(colMid);
+        canvas.drawRoundRect(new RectF(tL, cy, tL + tW * 0.76f, cy + ch), 11, 11, paint);
+
+        // Layer 3: lit face covers left 44%
+        paint.setColor(colLit);
+        canvas.drawRoundRect(new RectF(tL, cy, tL + tW * 0.44f, cy + ch), 11, 11, paint);
+
+        // Layer 4: bright leading edge
+        paint.setColor(colBright);
+        canvas.drawRoundRect(new RectF(tL, cy + ch * 0.04f,
+                tL + tW * 0.18f, cy + ch * 0.94f), 8, 8, paint);
+
+        // Surface sheen streak
+        paint.setColor(colBloom);
+        canvas.drawRoundRect(new RectF(tL + 4, cy + ch * 0.07f,
+                tL + 9, cy + ch * 0.82f), 4, 4, paint);
+
+        // ── VERTICAL FLUTES (cactus ribs run top-to-bottom) ───────────────
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        int fluteCount = 4;
+        for (int f = 1; f <= fluteCount; f++) {
+            float fx = tL + tW * f / (float)(fluteCount + 1);
+            // Darker groove
+            paint.setColor(f <= 2
+                    ? Color.argb(70, 0, 28, 4)
+                    : Color.argb(55, 0, 22, 4));
+            paint.setStrokeWidth(1.6f);
+            canvas.drawLine(fx, cy + 10, fx, cy + ch - 8, paint);
+            // Lit bead left of groove (only on front half)
+            if (f <= 2) {
+                paint.setColor(Color.argb(38, 165, 255, 120));
+                paint.setStrokeWidth(1.0f);
+                canvas.drawLine(fx - 2, cy + 12, fx - 2, cy + ch - 10, paint);
+            }
+        }
+
+        // Horizontal rib bands — subtle cross-hatch texture
+        int ribCount = Math.max(4, (int)(ch / 20));
+        for (int r = 1; r < ribCount; r++) {
+            float ry = cy + ch * r / (float)ribCount;
+            // Shadow crease on right
+            paint.setColor(Color.argb(48, 0, 30, 4));
+            paint.setStrokeWidth(1.4f);
+            canvas.drawLine(tL + tW * 0.30f, ry, tR + taper - 3, ry, paint);
+            // Highlight on left
+            paint.setColor(Color.argb(36, 170, 255, 130));
+            paint.setStrokeWidth(1.0f);
+            canvas.drawLine(tL + 3, ry - 1, tL + tW * 0.26f, ry - 1, paint);
+        }
+        paint.setStyle(Paint.Style.FILL);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+
+        // ── ROUNDED APEX (crown tip) ──────────────────────────────────────
+        paint.setColor(colLit);
+        canvas.drawOval(new RectF(tL + 2, cy - tW * 0.08f,
+                tR - 2 + taper, cy + tW * 0.32f), paint);
+        paint.setColor(colBright);
+        canvas.drawOval(new RectF(tL + 4, cy - tW * 0.06f,
+                tL + tW * 0.42f, cy + tW * 0.22f), paint);
+
+        // ── LEFT ARM ─────────────────────────────────────────────────────
+        if (ch > 60) {
+            float elbowY  = cy + ch * 0.40f;   // horizontal junction
+            float armTipY = cy + ch * 0.13f;   // top of vertical arm section
+            float armEndX = cx + cw * 0.02f;   // left extent of horizontal section
+            float armVR   = armEndX + cw * 0.32f; // right edge of vertical section
+            float armH    = cw * 0.30f;          // arm cross-section thickness
+
+            // Horizontal section
+            paint.setColor(colShadow);
+            canvas.drawRoundRect(new RectF(armEndX, elbowY - armH * 0.38f,
+                    tL + 5, elbowY + armH * 0.62f), 8, 8, paint);
+            paint.setColor(colMid);
+            canvas.drawRoundRect(new RectF(armEndX, elbowY - armH * 0.38f,
+                    tL + 3, elbowY + armH * 0.18f), 8, 8, paint);
+
+            // Vertical section
+            paint.setColor(colShadow);
+            canvas.drawRoundRect(new RectF(armEndX, armTipY,
+                    armVR, elbowY + armH * 0.50f), 9, 9, paint);
+            paint.setColor(colMid);
+            canvas.drawRoundRect(new RectF(armEndX, armTipY,
+                    armEndX + (armVR - armEndX) * 0.62f, elbowY + armH * 0.28f), 9, 9, paint);
+            paint.setColor(colLit);
+            canvas.drawRoundRect(new RectF(armEndX, armTipY + 4,
+                    armEndX + (armVR - armEndX) * 0.38f, elbowY), 6, 6, paint);
+
+            // Arm sheen
+            paint.setColor(colBloom);
+            canvas.drawRoundRect(new RectF(armEndX + 3, armTipY + 6,
+                    armEndX + 7, elbowY - 2), 3, 3, paint);
+
+            // Arm apex
+            paint.setColor(colLit);
+            canvas.drawOval(new RectF(armEndX + 1, armTipY - armH * 0.10f,
+                    armVR - 2, armTipY + armH * 0.36f), paint);
+        }
+
+        // ── RIGHT ARM ────────────────────────────────────────────────────
+        if (ch > 80) {
+            float elbowY  = cy + ch * 0.54f;
+            float armTipY = cy + ch * 0.24f;
+            float armEndX = cx + cw * 0.98f;
+            float armVL   = armEndX - cw * 0.30f;
+            float armH    = cw * 0.28f;
+
+            // Horizontal
+            paint.setColor(colShadow);
+            canvas.drawRoundRect(new RectF(tR - 5, elbowY - armH * 0.35f,
+                    armEndX, elbowY + armH * 0.65f), 8, 8, paint);
+            paint.setColor(colMid);
+            canvas.drawRoundRect(new RectF(tR - 3, elbowY - armH * 0.35f,
+                    armEndX - (armEndX - armVL) * 0.28f, elbowY + armH * 0.18f), 8, 8, paint);
+
+            // Vertical
+            paint.setColor(colShadow);
+            canvas.drawRoundRect(new RectF(armVL, armTipY,
+                    armEndX, elbowY + armH * 0.50f), 9, 9, paint);
+            paint.setColor(colMid);
+            canvas.drawRoundRect(new RectF(armVL, armTipY,
+                    armVL + (armEndX - armVL) * 0.55f, elbowY + armH * 0.26f), 9, 9, paint);
+
+            // Arm apex
+            paint.setColor(colLit);
+            canvas.drawOval(new RectF(armVL + 2, armTipY - armH * 0.08f,
+                    armEndX - 1, armTipY + armH * 0.34f), paint);
+        }
+
+        // ── SPINES (areole clusters) ──────────────────────────────────────
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+
+        int areoleRows = Math.max(4, (int)(ch / 18));
+        for (int s = 0; s < areoleRows; s++) {
+            float sy = cy + ch * (s + 0.5f) / areoleRows;
+            // Vary spine lengths per row for natural look
+            float lenL = 7f + (s % 3) * 3.2f;
+            float lenR = 6.5f + ((s + 1) % 3) * 2.8f;
+
+            paint.setStrokeWidth(1.4f);
+            paint.setColor(colSpine);
+
+            // Left areole — 3 spines per cluster
+            canvas.drawLine(tL, sy, tL - lenL * 1.15f, sy - lenL * 0.55f, paint);
+            canvas.drawLine(tL, sy, tL - lenL * 1.05f, sy, paint);
+            canvas.drawLine(tL, sy, tL - lenL * 0.90f, sy + lenL * 0.60f, paint);
+
+            // Right areole — 3 spines
+            canvas.drawLine(tR + taper, sy, tR + taper + lenR * 1.15f, sy - lenR * 0.55f, paint);
+            canvas.drawLine(tR + taper, sy, tR + taper + lenR * 1.05f, sy, paint);
+            canvas.drawLine(tR + taper, sy, tR + taper + lenR * 0.90f, sy + lenR * 0.60f, paint);
+        }
+
+        // Front-face spine cluster at every other flute junction
+        int frontAreoles = Math.max(2, areoleRows / 2);
+        for (int s = 0; s < frontAreoles; s++) {
+            float sy = cy + ch * (s * 2 + 1) / (float)(frontAreoles * 2);
+            float len = 5.5f + (s % 2) * 2.5f;
+            paint.setColor(colSpine);
+            paint.setStrokeWidth(1.2f);
+            canvas.drawLine(tL + tW * 0.22f, sy, tL + tW * 0.22f - len * 0.4f, sy - len, paint);
+            canvas.drawLine(tL + tW * 0.22f, sy, tL + tW * 0.22f + len * 0.2f, sy - len, paint);
+        }
+
+        // Spine tips (tiny dots at the very tip of each spine)
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(colTip);
+        for (int s = 0; s < areoleRows; s++) {
+            float sy = cy + ch * (s + 0.5f) / areoleRows;
+            float lenL = 7f + (s % 3) * 3.2f;
+            float lenR = 6.5f + ((s + 1) % 3) * 2.8f;
+            canvas.drawCircle(tL - lenL * 1.15f, sy - lenL * 0.55f, 1.6f, paint);
+            canvas.drawCircle(tL - lenL * 1.05f, sy, 1.6f, paint);
+            canvas.drawCircle(tR + taper + lenR * 1.15f, sy - lenR * 0.55f, 1.6f, paint);
+            canvas.drawCircle(tR + taper + lenR * 1.05f, sy, 1.6f, paint);
+        }
+
+        // ── ARM APEX SPINES ───────────────────────────────────────────────
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeCap(Paint.Cap.ROUND);
+        paint.setStrokeWidth(1.3f);
+        paint.setColor(colSpine);
+        if (ch > 60) {
+            float armTipY = cy + ch * 0.13f;
+            float armEndX = cx + cw * 0.02f;
+            float armVR   = armEndX + cw * 0.32f;
+            float tipCx   = (armEndX + armVR) / 2f;
+            for (int i = 0; i < 3; i++) {
+                float ax = tipCx - 9f + i * 9f;
+                canvas.drawLine(ax, armTipY + 2, ax - 3, armTipY - 8, paint);
+                canvas.drawLine(ax, armTipY + 2, ax + 3, armTipY - 8, paint);
+            }
+        }
+        if (ch > 80) {
+            float armTipY = cy + ch * 0.24f;
+            float armEndX = cx + cw * 0.98f;
+            float armVL   = armEndX - cw * 0.30f;
+            float tipCx   = (armVL + armEndX) / 2f;
+            for (int i = 0; i < 3; i++) {
+                float ax = tipCx - 8f + i * 8f;
+                canvas.drawLine(ax, armTipY + 2, ax - 3, armTipY - 8, paint);
+                canvas.drawLine(ax, armTipY + 2, ax + 3, armTipY - 8, paint);
+            }
+        }
+
+        paint.setStyle(Paint.Style.FILL);
+        paint.setStrokeCap(Paint.Cap.BUTT);
+    }
     private void drawShareMiniCactus(Canvas canvas, Paint p, float x, float y, float w, float h) {
         p.setColor(Color.rgb(28, 126, 54));
         canvas.drawRoundRect(new RectF(x + w * 0.28f, y, x + w * 0.72f,
@@ -4136,6 +4278,10 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
         return shouldDrawShadows() && getDaylightAmount() > 0.18f;
     }
 
+    public boolean shouldDrawTerrainShadows() {
+        return shouldDrawSceneShadows() && sm.graphicsQualityIndex >= 2;
+    }
+
     public int shadowAlpha(int baseAlpha) {
         if (!shouldDrawShadows() || baseAlpha <= 0) {
             return 0;
@@ -4155,12 +4301,15 @@ public class GameView extends SurfaceView implements SurfaceHolder.Callback {
                 return 0.55f + sm.shadowResolutionIndex * 0.10f + sm.shadowCascadesIndex * 0.08f;
             case 1:
             default:
-                return 0.78f;
+                return 0.64f;
         }
     }
 
     public float getSoftShadowExtra() {
         if (!sm.softShadows || !sm.shadowsEnabled) {
+            return 0f;
+        }
+        if (sm.graphicsQualityIndex <= 1) {
             return 0f;
         }
         return 4f + sm.shadowCascadesIndex * 1.5f + sm.shadowResolutionIndex * 0.8f;

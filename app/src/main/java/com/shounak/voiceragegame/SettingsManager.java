@@ -10,9 +10,9 @@ public class SettingsManager {
     public boolean shadowsEnabled = true;
     public int graphicsQualityIndex = 1;
     public int shadowPresetIndex = 1;
-    public int shadowResolutionIndex = 2;
-    public int shadowCascadesIndex = 1;
-    public boolean softShadows = true;
+    public int shadowResolutionIndex = 1;
+    public int shadowCascadesIndex = 0;
+    public boolean softShadows = false;
     public int msaaIndex = 1;
     public float saturationPct = 50f;
     public float contrastPct = 50f;
@@ -21,6 +21,8 @@ public class SettingsManager {
     public float masterAudioBoostPct = 50f;
     public boolean dailyChallenge = true;
     public boolean hapticsEnabled = true;
+    public int highScore = 0;
+    public int lastScore = 0;
 
     private static final String PREFS_NAME = "VocexRunPrefs";
 
@@ -31,9 +33,9 @@ public class SettingsManager {
         shadowsEnabled = prefs.getBoolean("shadowsEnabled", true);
         graphicsQualityIndex = clamp(prefs.getInt("graphicsQualityIndex", 1), 0, 3);
         shadowPresetIndex = clamp(prefs.getInt("shadowPresetIndex", 1), 0, 4);
-        shadowResolutionIndex = clamp(prefs.getInt("shadowResolutionIndex", 2), 0, 4);
-        shadowCascadesIndex = clamp(prefs.getInt("shadowCascadesIndex", 1), 0, 3);
-        softShadows = prefs.getBoolean("softShadows", true);
+        shadowResolutionIndex = clamp(prefs.getInt("shadowResolutionIndex", 1), 0, 4);
+        shadowCascadesIndex = clamp(prefs.getInt("shadowCascadesIndex", 0), 0, 3);
+        softShadows = prefs.getBoolean("softShadows", false);
         msaaIndex = clamp(prefs.getInt("msaaIndex", 1), 0, 2);
         saturationPct = clamp(prefs.getFloat("saturationPct", 50f), 0f, 100f);
         contrastPct = clamp(prefs.getFloat("contrastPct", 50f), 0f, 100f);
@@ -43,6 +45,8 @@ public class SettingsManager {
         selectedMode = prefs.getInt("selectedMode", -1);
         dailyChallenge = prefs.getBoolean("dailyChallenge", true);
         hapticsEnabled = prefs.getBoolean("hapticsEnabled", true);
+        highScore = prefs.getInt("highScore", 0);
+        lastScore = prefs.getInt("lastScore", 0);
     }
 
     public void save(Context context) {
@@ -65,6 +69,8 @@ public class SettingsManager {
                 .putInt("selectedMode", selectedMode)
                 .putBoolean("dailyChallenge", dailyChallenge)
                 .putBoolean("hapticsEnabled", hapticsEnabled)
+                .putInt("highScore", highScore)
+                .putInt("lastScore", lastScore)
                 .apply();
     }
 
@@ -79,8 +85,8 @@ public class SettingsManager {
                 Player.jumpDeltaThreshold = 300;
                 break;
             case 1:
-                Player.jumpAmpThreshold = 2900;
-                Player.jumpDeltaThreshold = 950;
+                Player.jumpAmpThreshold = 3400;
+                Player.jumpDeltaThreshold = 1100;
                 break;
             case 2:
                 Player.jumpAmpThreshold = 6000;

@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat;
 public class MainActivity extends AppCompatActivity {
 
     private static final int MIC_PERMISSION_CODE = 101;
+    private static boolean openingLoadingShownForProcess = false;
     private GameView gameView;
     private boolean showOpeningLoadingOnStart = true;
     private boolean openingLoadingConsumed = false;
@@ -60,8 +61,13 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("NewApi")
     private void startGame() {
-        boolean showOpeningLoading = showOpeningLoadingOnStart && !openingLoadingConsumed;
+        boolean showOpeningLoading = showOpeningLoadingOnStart
+                && !openingLoadingConsumed
+                && !openingLoadingShownForProcess;
         openingLoadingConsumed = true;
+        if (showOpeningLoading) {
+            openingLoadingShownForProcess = true;
+        }
         gameView = new GameView(this, showOpeningLoading);
         setContentView(gameView);
         hideSystemUI();
@@ -72,7 +78,15 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         boolean fromRecents = intent != null
                 && (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0;
-        return savedInstanceState == null && !fromRecents;
+        return savedInstanceState == null && !fromRecents && !openingLoadingShownForProcess;
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        showOpeningLoadingOnStart = false;
+        hideSystemUI();
     }
 
     @SuppressLint("NewApi")
@@ -125,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         if (gameView != null) {
+            gameView.cancelOpeningLoadingScreen();
             gameView.pause();
         }
         notifyGameState(GameState.MODE_NONE, false);
@@ -134,9 +149,18 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         if (gameView != null) {
             gameView.resume();
         }
         notifyGameState(GameState.MODE_CONTENT, false);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (isFinishing()) {
+            openingLoadingShownForProcess = false;
+        }
     }
 }

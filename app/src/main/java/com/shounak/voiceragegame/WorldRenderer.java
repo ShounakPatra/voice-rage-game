@@ -71,7 +71,7 @@ public class WorldRenderer {
         int bodyA = (int)(38 * dimAlpha);
         int hiA = (int)(22 * dimAlpha);
 
-        if (gv.shouldDrawShadows() && shadowA > 2) {
+        if (gv.shouldDrawTerrainShadows() && shadowA > 2) {
             cloudPaint.setColor(Color.argb(shadowA, 140, 150, 180));
             canvas.drawOval(new RectF(cx - 10, cy + 22, cx + 200, cy + 70), cloudPaint);
         }
@@ -280,7 +280,7 @@ public class WorldRenderer {
                         android.graphics.Shader.TileMode.CLAMP));
                 canvas.drawPath(scratchPath, auxPaint);
                 auxPaint.setShader(null);
-                if (gv.shouldDrawShadows()) {
+                if (gv.shouldDrawTerrainShadows()) {
                     paint.setColor(Color.argb(gv.shadowAlpha((int) (26 + depth * 28)), 80, 46, 28));
                     canvas.drawLine(x + spacing * 0.48f, crestY - height * 0.42f,
                             x + spacing * 1.04f, baseY - height * 0.06f, paint);
@@ -385,7 +385,7 @@ public class WorldRenderer {
         canvas.drawPath(body, auxPaint);
         auxPaint.setShader(null);
 
-        if (gv.shouldDrawShadows()) {
+        if (gv.shouldDrawTerrainShadows()) {
             Path shadow = scratchPath2;
             shadow.reset();
             shadow.moveTo(peakX, peakY);
@@ -474,7 +474,7 @@ public class WorldRenderer {
             canvas.drawPath(dune, auxPaint);
             auxPaint.setShader(null);
 
-            if (gv.shouldDrawShadows()) {
+            if (gv.shouldDrawTerrainShadows()) {
                 Path leeSide = scratchPath2;
                 leeSide.reset();
                 leeSide.moveTo(x + safeSpacing * 0.55f, crestY - amplitude * 0.66f);
