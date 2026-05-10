@@ -4,15 +4,25 @@ All notable changes to Vocex Run will be documented here.
 
 ---
 
-# v5.1
+## [5.1] - 2026-05-07
 
-## Improvements
+### Fixed
+- Fixed graphics quality menu crash and freezing issue
+- Fixed loading screen appearing when reopening from recent apps
+- Fixed delayed shadow rendering at game startup
+- Improved Normal Mode jump sensitivity
+- Improved settings stability and rendering consistency
 
-* Updated project branding to Vocex Run
-* Improved repository structure and documentation
-* Added contributing guidelines
-* Added security policy and code of conduct
-* Cleaned up repository configuration files
+### Changed
+- Daily Mode now enabled by default on fresh install
+- Dynamic shadows now enabled by default
+- Improved loading flow and app resume behavior
+- Enhanced gameplay polish, responsiveness, and visual smoothness
+
+### Added
+- Persistent all-time high score saving
+- Persistent last score saving across reinstalls (cloud/local backup supported)
+- Additional visual and gameplay refinements for a more premium experience
 
 ---
 
