@@ -19,7 +19,7 @@
 
 <p align="center">
   <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
-    <img src="https://img.shields.io/badge/⬇%20Download%20Vocex%20Run%20v5.0%20APK-34C759?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" height="58"/>
+    <img src="https://img.shields.io/badge/⬇%20%20Download%20Vocex%20Run%20v5.0%20APK%20%20-34C759?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" height="58"/>
   </a>
 </p>
 
