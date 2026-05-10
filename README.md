@@ -18,7 +18,7 @@
 ## 📥 Download
 
 <p align="center">
-  <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.1/VocexRun-v5.1.apk">
+  <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.1/VocexRun-v5.1-stable.apk">
     <img src="https://img.shields.io/badge/⬇%20%20Download%20Vocex%20Run%20v5.1%20APK%20%20-34C759?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" height="58"/>
   </a>
 </p>
@@ -26,7 +26,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Free-No_Ads-222222?style=flat-square&logo=github&logoColor=white"/>
   <img src="https://img.shields.io/badge/Min_SDK-Android_8.0+-222222?style=flat-square&logo=android&logoColor=3DDC84"/>
-  <img src="https://img.shields.io/badge/Size-~12_MB-222222?style=flat-square"/>
+  <img src="https://img.shields.io/badge/Size-~5_MB-222222?style=flat-square"/>
   <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Downloads&color=222222"/>
 </p>
 
