@@ -8,7 +8,7 @@
 <p align="center">
   <img src="https://img.shields.io/github/stars/ShounakPatra/vocex-run?style=social"/>
   <img src="https://github.com/ShounakPatra/vocex-run/actions/workflows/android.yml/badge.svg"/>
-  <img src="https://img.shields.io/badge/version-5.0-blue?style=flat-square"/>
+  <img src="https://img.shields.io/badge/version-5.1-blue?style=flat-square"/>
   <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
   <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
 </p>
@@ -18,8 +18,8 @@
 ## 📥 Download
 
 <p align="center">
-  <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
-    <img src="https://img.shields.io/badge/⬇%20%20Download%20Vocex%20Run%20v5.0%20APK%20%20-34C759?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" height="58"/>
+  <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.1/VocexRun-v5.1.apk">
+    <img src="https://img.shields.io/badge/⬇%20%20Download%20Vocex%20Run%20v5.1%20APK%20%20-34C759?style=for-the-badge&logo=android&logoColor=white&labelColor=111111" height="58"/>
   </a>
 </p>
 
