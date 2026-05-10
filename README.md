@@ -19,17 +19,15 @@
 
 <p align="center">
   <a href="https://github.com/ShounakPatra/vocex-run/releases/download/v5.0/VocexRun-v5.0.apk">
-    <img src="https://img.shields.io/badge/⬇%20Download-VocexRun%20v5.0%20APK-3DDC84?style=flat-square&logo=android&logoColor=white&labelColor=000000" height="100"/>
+    <img src="https://img.shields.io/badge/Download_VocexRun_v5.0_APK-111111?style=for-the-badge&logo=android&logoColor=3DDC84&labelColor=000000" height="70"/>
   </a>
 </p>
+
 <p align="center">
-  <img src="https://img.shields.io/badge/Free-No%20Ads-111111?style=flat-square"/>
-  &nbsp;
-  <img src="https://img.shields.io/badge/Min%20SDK-Android%208.0+-111111?style=flat-square&logo=android&logoColor=3DDC84"/>
-  &nbsp;
-  <img src="https://img.shields.io/badge/Size-~12%20MB-111111?style=flat-square"/>
-  &nbsp;
-  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Downloads&color=111111&labelColor=1a1a1a"/>
+  <img src="https://img.shields.io/badge/Free-No_Ads-222222?style=flat-square&logo=github&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Min_SDK-Android_8.0+-222222?style=flat-square&logo=android&logoColor=3DDC84"/>
+  <img src="https://img.shields.io/badge/Size-~12_MB-222222?style=flat-square"/>
+  <img src="https://img.shields.io/github/downloads/ShounakPatra/vocex-run/total?style=flat-square&label=Downloads&color=222222"/>
 </p>
 
 <p align="center">
@@ -75,15 +73,16 @@ Each mode adjusts voice thresholds for consistent gameplay across environments.
 
 ---
 
-## 🚀 What's New in v5.0
+## 🚀 What's New in v5.1
 
-- ✈️ Flying enemies added for late-game difficulty
-- 🌤️ Dynamic shadows based on lighting conditions
-- ⚡ Near-instant jump responsiveness
-- 🔄 Ceiling collision system — no more off-screen glitches
-- 🎯 Improved microphone consistency across devices
-- ⚙️ Settings menu with sensitivity controls
-- 🧩 Performance and gameplay refinements
+- 💾 High scores and last scores now persist more reliably
+- 🌤️ Daily Mode and dynamic shadows enabled by default
+- ⚡ Improved Normal Mode jump sensitivity
+- 🛠️ Fixed graphics quality menu crashes and freezes
+- 🚀 Optimized loading screen behavior and app resume flow
+- 🎯 Faster shadow rendering during gameplay startup
+- 🎨 Additional gameplay polish and visual refinements
+- 🧩 Stability, performance, and responsiveness improvements
 
 ---
 
