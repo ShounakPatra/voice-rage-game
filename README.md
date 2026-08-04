@@ -1,17 +1,24 @@
-<h1 align="center">🎤 Vocex Run</h1>
+<div align="center">
+
+<!-- Animated Header Typing Banner -->
+<a href="https://github.com/ShounakPatra/vocex-run">
+  <img src="https://readme-typing-svg.demolab.com?font=Outfit&weight=700&size=28&pause=1000&color=34C759&center=true&vCenter=true&width=650&height=70&lines=%F0%9F%8E%A4+Vocex+Run+-+Voice-Controlled+Runner;Silence+Slows+%E2%80%A2+Speech+Accelerates;Sharp+Sounds+Jump+%E2%80%A2+Zero+Touch+Controls" alt="Vocex Run Header" />
+</a>
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/355e0248-ea4b-4a5c-ba56-4fb2ba669e6f" width="700"/>
 </p>
+
+<h3>A voice-controlled endless runner where your reflexes — and your voice — decide how far you survive.</h3>
+
 <p align="center">
-  <b>A voice-controlled endless runner where your reflexes — and your voice — decide how far you survive.</b>
+  <img src="https://img.shields.io/badge/version-5.1-0EA5E9?style=for-the-badge&logo=android&logoColor=white" />
+  <img src="https://img.shields.io/badge/platform-Android_8.0%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white" />
+  <img src="https://img.shields.io/badge/status-active-20C997?style=for-the-badge" />
+  <img src="https://img.shields.io/github/stars/ShounakPatra/vocex-run?style=for-the-badge&logo=github&color=FFD700" />
 </p>
-<p align="center">
-  <img src="https://img.shields.io/github/stars/ShounakPatra/vocex-run?style=social"/>
-  <img src="https://github.com/ShounakPatra/vocex-run/actions/workflows/android.yml/badge.svg"/>
-  <img src="https://img.shields.io/badge/version-5.1-blue?style=flat-square"/>
-  <img src="https://img.shields.io/badge/platform-Android-green?style=flat-square"/>
-  <img src="https://img.shields.io/badge/status-active-success?style=flat-square"/>
-</p>
+
+</div>
 
 ---
 
